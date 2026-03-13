@@ -1140,7 +1140,7 @@ def run():
         "steam_reviews":       len(steam_reviews),
         "youtube_comments":    len(youtube_comments),
         "requests_found":      len(demands),
-        "leaderboard":         demands[:50],
+        "leaderboard":         demands[:100],
         "post_lookup": {
             pid: {
                 "title":        p.get("title",""),
