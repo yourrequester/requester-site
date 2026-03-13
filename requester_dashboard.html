@@ -1044,7 +1044,7 @@ header {
   <div class="hero-inner">
     <div class="hero-text">
       <h1 id="hero-title">What are people asking for?</h1>
-      <p id="hero-sub">The most-requested changes, fixes, and features — ranked by community demand across every platform.</p>
+      <p id="hero-sub" style="display:none;"></p>
     </div>
     <div class="hero-stats" id="hero-stats" style="display:none;">
       <div class="hero-stat">
@@ -1681,7 +1681,9 @@ function ingestData(data) {
   // Subtitle: always show sources as small text
   const sourceList = allSources.join(' · ');
   const postCount = (data.posts_scanned||0) + (data.appstore_reviews||0) + (data.googleplay_reviews||0) + (data.trustpilot_reviews||0) + (data.steam_reviews||0) + (data.youtube_comments||0);
-  document.getElementById('hero-sub').textContent = `${postCount.toLocaleString()} signals scanned · ${sourceList}`;
+  const heroSub = document.getElementById('hero-sub');
+  heroSub.textContent = `${postCount.toLocaleString()} signals scanned · ${sourceList}`;
+  heroSub.style.display = '';
   document.getElementById('hs-posts').textContent = (data.posts_scanned||0).toLocaleString();
   const postsScanned = data.posts_scanned||0;
   document.getElementById('hs-posts-label').textContent = postsScanned === 1 ? 'Post Scanned' : 'Posts Scanned';
@@ -1706,7 +1708,8 @@ function ingestData(data) {
   document.getElementById('sw-companies-lbl').textContent = companyCount === 1 ? 'Product' : 'Products';
 
   // Show/hide sections
-  document.getElementById('upload-section').style.display = 'none';
+  const ls = document.getElementById('loading-state');
+  if (ls) ls.style.display = 'none';
   document.getElementById('main-layout').classList.add('visible');
   document.getElementById('cat-widget').style.display = 'block';
 
