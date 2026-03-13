@@ -1,0 +1,38 @@
+name: Scrape Requester Data
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+  workflow_dispatch:          # allows manual run from GitHub Actions tab
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          YOUTUBE_API_KEY:   ${{ secrets.YOUTUBE_API_KEY }}
+        run: python requester_phase1.py
+
+      - name: Commit updated results
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "data: update scrape results [skip ci]"
+          file_pattern: requester_results.json
+          commit_user_name: "Requester Bot"
+          commit_user_email: "bot@requester.org"

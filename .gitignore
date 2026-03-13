@@ -1,0 +1,22 @@
+# ── Secrets & credentials ──────────────────────────────────
+.env
+
+# ── Database (don't commit — Railway uses ephemeral storage) ─
+*.db
+*.db-shm
+*.db-wal
+
+# ── Scrape output (large, regenerated each run) ─────────────
+requester_results.json
+requester_db_export.json
+
+# ── Python cache ─────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ── OS junk ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
