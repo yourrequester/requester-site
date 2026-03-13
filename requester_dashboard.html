@@ -571,6 +571,10 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
 .tag-ui       { background: rgba(107,63,160,0.10);  color: #6b3fa0; }
 .tag-policy   { background: rgba(176,125,16,0.10);  color: var(--gold); }
 .tag-other    { background: rgba(154,149,144,0.10); color: var(--ink-mid); }
+/* Tag as clickable button */
+.tag { border: none; cursor: pointer; font-family: inherit; }
+.tag:hover { filter: brightness(0.9); }
+.tag.tag-active { outline: 2px solid currentColor; outline-offset: 1px; }
 
 .thread-count {
   font-size: 12px;
@@ -1100,14 +1104,7 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
       <span class="search-icon">🔍</span>
       <input class="search-input" type="text" id="search-input" placeholder="Search requests, companies, topics…">
     </div>
-    <div class="filter-pills" id="filter-pills">
-      <button class="pill active" data-filter="all">All</button>
-      <button class="pill" data-filter="Bug Fix">Bug Fixes</button>
-      <button class="pill" data-filter="Feature Request">Features</button>
-      <button class="pill" data-filter="Content Request">Content</button>
-      <button class="pill" data-filter="UI/UX">UI / UX</button>
-      <button class="pill" data-filter="Policy Change">Policy</button>
-    </div>
+    <div id="filter-pills" style="display:none;"></div>
     <span class="result-count" id="result-count"></span>
   </div>
   <!-- Source filter row — populated dynamically -->
@@ -1122,17 +1119,9 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
 
     <div class="sidebar" style="position:sticky;top:80px;max-height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;">
 
-      <!-- Overview: signal volume bar chart -->
-      <div class="widget" id="stats-widget">
-        <div class="widget-head"><span class="widget-title">Signal Volume</span></div>
-        <div class="signal-chart" id="signal-chart">
-          <div style="color:var(--ink-light);font-size:12px;padding:8px 0;">Loading…</div>
-        </div>
-      </div>
-
-      <!-- Platforms breakdown -->
+      <!-- Request volume by platform -->
       <div class="widget" id="platforms-widget" style="display:none;">
-        <div class="widget-head"><span class="widget-title">Platforms</span></div>
+        <div class="widget-head"><span class="widget-title">Request Volume</span></div>
         <div id="platforms-body"></div>
       </div>
 
@@ -1300,6 +1289,12 @@ let allRequests = [], postLookup = {}, currentData = {};
 let activeFilter = 'all', activeSearch = '', selectedId = -1;
 let activeSources = new Set();
 
+// Generate a stable slug from subject + action (mirrors Python _make_demand_slug)
+function _clientSlug(subject, action) {
+  return ((subject||'') + '-' + (action||'')).toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+}
+
 const catClass = { 'Bug Fix':'tag-bug','Feature Request':'tag-feature','Content Request':'tag-content','UI/UX':'tag-ui','Policy Change':'tag-policy','Other':'tag-other' };
 const catColor  = { 'Bug Fix':'#c0392b','Feature Request':'#1a4a8a','Content Request':'#1a7a4a','UI/UX':'#6b3fa0','Policy Change':'#b07d10','Other':'#9a9590' };
 
@@ -1405,6 +1400,13 @@ async function loadVoteCounts() {
 // ── Voting ────────────────────────────────────────────────
 async function toggleVote(slug, event, btnEl) {
   if (event) event.stopPropagation();
+  if (!slug) {
+    // Fallback: generate slug from the demand's subject+action
+    const card = btnEl?.closest('[data-id]');
+    const id   = card ? parseInt(card.dataset.id) : -1;
+    const demand = allRequests.find(x => x._id === id);
+    if (demand) slug = demand.slug || _clientSlug(demand.subject, demand.action);
+  }
   if (!slug) { showToast('Cannot vote on this item'); return; }
   if (!currentUser) {
     _pendingVoteSlug = slug;
@@ -1470,6 +1472,20 @@ async function _doVote(slug, btnEl) {
 // ── URL param handling ────────────────────────────────────
 function applyUrlParams() {
   const params = new URLSearchParams(window.location.search);
+
+  // ?slug=... → find matching demand and open it
+  const slug = params.get('slug');
+  if (slug) {
+    setTimeout(() => {
+      const demand = allRequests.find(d =>
+        (d.slug || _clientSlug(d.subject, d.action)) === slug
+      );
+      if (demand) selectRequest(demand._id);
+    }, 150);
+    return; // don't also apply subject filter when linking to a specific item
+  }
+
+  // ?subject=... / ?company=... → filter by company name
   const subject = params.get('subject') || params.get('company');
   if (subject) {
     activeSearch = subject;
@@ -1477,21 +1493,16 @@ function applyUrlParams() {
     if (searchInput) searchInput.value = subject;
     render();
   }
-  const demandId = params.get('id');
-  if (demandId !== null) {
-    const id = parseInt(demandId);
-    if (!isNaN(id)) setTimeout(() => selectRequest(id), 100);
-  }
 }
 
-// ── Share button ──────────────────────────────────────────
-function shareSubject(subject, event) {
+// ── Share button — deep-links to the specific demand ─────
+function shareSubject(slug, event) {
   if (event) event.stopPropagation();
   const url = new URL(window.location.href);
   url.search = '';
-  url.searchParams.set('subject', subject);
+  url.searchParams.set('slug', slug);
   navigator.clipboard.writeText(url.toString()).then(() => {
-    showToast('Link copied — share it!');
+    showToast('Link copied!');
   }).catch(() => {
     showToast(url.toString());
   });
@@ -1873,6 +1884,14 @@ function _demandSources(d) {
 }
 
 function buildSourcePills() {
+  // ── Build canonical company list from config data ──────────────────────────
+  const knownCompanies = new Set([
+    ...(currentData.appstore_apps    || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+    ...(currentData.googleplay_apps  || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+    ...(currentData.trustpilot_companies || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+    ...(currentData.steam_apps       || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+  ].filter(Boolean));
+
   // ── Count demands per company (subject) ───────────────────────────────────
   const counts = {};
   allRequests.forEach(d => {
@@ -1880,7 +1899,10 @@ function buildSourcePills() {
     if (subj) counts[subj] = (counts[subj] || 0) + 1;
   });
 
-  const companies = Object.keys(counts).filter(s => counts[s] > 0);
+  // Only show pills for known canonical company names (skip "Airlines" / generic subjects)
+  const companies = Object.keys(counts).filter(s =>
+    counts[s] > 0 && (knownCompanies.size === 0 || knownCompanies.has(s))
+  );
   if (companies.length <= 1) {
     document.getElementById('source-filter-row').style.display = 'none';
     return;
@@ -1915,6 +1937,13 @@ function toggleSource(src, btn) {
     activeSources.add(src);
     btn.classList.add('active');
   }
+  render();
+}
+
+function filterByCat(cat, event) {
+  if (event) event.stopPropagation();
+  // Toggle: clicking the active category clears the filter
+  activeFilter = (activeFilter === cat) ? 'all' : cat;
   render();
 }
 
@@ -1961,7 +1990,12 @@ function render() {
           <div class="card-rank-row">
             <span class="card-rank ${isTop?'top':''}">#${i+1}</span>
             <span class="card-subject">${d.subject||'Unknown'}</span>
-            ${d.source_subreddit && d.source_subreddit !== 'appstore' && d.source_subreddit !== 'googleplay' && !(d.post_ids||[]).some(id=>id.startsWith('gp_')) ? `<span class="source-badge reddit">r/${cleanSub(d.source_subreddit)}</span>` : ''}
+            ${(() => {
+              const NON_RD = ['as_','gp_','tp_','st_','yt_'];
+              const hasReddit = (d.post_ids||[]).some(id => !NON_RD.some(p=>id.startsWith(p)));
+              const sub = d.source_subreddit && !['appstore','googleplay','trustpilot','steam','youtube'].includes(d.source_subreddit) ? d.source_subreddit : '';
+              return hasReddit ? `<span class="source-badge reddit">${sub ? 'r/'+cleanSub(sub) : 'Reddit'}</span>` : '';
+            })()}
             ${(d.post_ids||[]).some(id=>id.startsWith('as_')) || d.source_subreddit === 'appstore' ? `<span class="source-badge appstore">📱 App Store</span>` : ''}
             ${(d.post_ids||[]).some(id=>id.startsWith('gp_')) || d.source_subreddit === 'googleplay' ? `<span class="source-badge googleplay">▶ Google Play</span>` : ''}
             ${(d.post_ids||[]).some(id=>id.startsWith('tp_')) || d.source_subreddit === 'trustpilot' ? `<span class="source-badge trustpilot">⭐ Trustpilot</span>` : ''}
@@ -1978,14 +2012,14 @@ function render() {
       </div>
       <div class="card-bottom">
         <div class="card-tags">
-          <span class="tag ${catCls}">${d.category||'Other'}</span>
+          <button class="tag ${catCls}${activeFilter===d.category?' tag-active':''}" onclick="filterByCat('${(d.category||'Other').replace(/'/g,"\\'")}',event)" title="Filter by ${d.category||'Other'}">${d.category||'Other'}</button>
           <span class="thread-count">${threads} thread${threads!==1?'s':''}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button class="upvote-btn ${d.user_voted?'voted':''}" onclick="toggleVote('${d.slug||''}',event,this)" data-slug="${d.slug||''}">
             ▲ <span class="vote-count">${d.vote_count||0}</span>
           </button>
-          <button class="share-btn" onclick="shareSubject('${(d.subject||'').replace(/'/g,"\\'")}',event)" title="Share link for ${(d.subject||'').replace(/'/g,"\\'")}">🔗</button>
+          <button class="share-btn" onclick="shareSubject('${(d.slug||_clientSlug(d.subject,d.action)).replace(/'/g,"\\'")}',event)" title="Copy link to this request">🔗</button>
         </div>
       </div>
     </div>`;
@@ -2069,7 +2103,7 @@ function selectRequest(id) {
       <div class="detail-score-num">${fmtScore(d.gravity_score)}</div>
       <div class="detail-score-label">Gravity Score</div>
       <div style="margin-left:auto;">
-        <button class="upvote-btn-lg ${d.user_voted?'voted':''}" id="detail-vote-btn" onclick="toggleVote('${d.slug||''}',event,null)" data-slug="${d.slug||''}">
+        <button class="upvote-btn-lg ${d.user_voted?'voted':''}" id="detail-vote-btn" onclick="toggleVote('${d.slug||_clientSlug(d.subject,d.action)}',event,this)" data-slug="${d.slug||_clientSlug(d.subject,d.action)}">
           ▲ <span id="detail-vote-count">${d.vote_count||0}</span> vote${(d.vote_count||0)!==1?'s':''}
         </button>
       </div>
@@ -2245,6 +2279,35 @@ async function saveSettings() {
   }
 }
 </script>
+
+<!-- About section -->
+<section id="about" style="max-width:1200px;margin:60px auto 0;padding:0 40px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px;">
+
+    <!-- What is Requester -->
+    <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">What is Requester?</div>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">The voice of your customers, ranked and distilled.</h3>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Requester monitors Reddit, app stores, Trustpilot, YouTube, and more — then uses AI to extract and rank the most-requested product changes, bug fixes, and features. Updated every 6 hours.</p>
+    </div>
+
+    <!-- Gravity Score -->
+    <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">How is Gravity Score calculated?</div>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">More signal, more weight.</h3>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Gravity combines three signals: <strong>upvotes</strong> (community validation), <strong>unique threads</strong> (how many separate conversations mention it), and <strong>recency</strong> (recent requests score higher). A Google Trends boost of up to 2.5× amplifies requests currently spiking in public search interest.</p>
+    </div>
+
+    <!-- Contact -->
+    <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">Contact & Business</div>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">Built for product teams.</h3>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Interested in tracking a different industry, white-label access, or custom integrations? We'd love to hear from you.</p>
+      <a href="mailto:YourRequester@gmail.com" style="display:inline-block;margin-top:16px;padding:9px 20px;background:var(--accent);color:#fff;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;letter-spacing:0.02em;">Get in touch →</a>
+    </div>
+
+  </div>
+</section>
 
 <!-- Footer -->
 <footer style="border-top:1px solid var(--ink-faint);margin-top:60px;padding:32px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">

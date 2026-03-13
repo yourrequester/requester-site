@@ -777,13 +777,27 @@ def extract_demands_with_ai(posts):
     for d in demands:
         pids = d.get("post_ids", [])
         found_sources = set()
+        reddit_subs   = set()
         for pid in pids:
+            matched = False
             for prefix, src in PREFIX_SOURCE.items():
                 if pid.startswith(prefix):
                     found_sources.add(src)
+                    matched = True
                     break
-        if len(found_sources) == 1:
-            d["source_subreddit"] = found_sources.pop()
+            if not matched:
+                # Reddit post — record its subreddit
+                p = post_lookup.get(pid, {})
+                sub = p.get("_subreddit", "")
+                if sub:
+                    reddit_subs.add(sub)
+        if found_sources and not reddit_subs:
+            # Pure non-reddit demand
+            if len(found_sources) == 1:
+                d["source_subreddit"] = found_sources.pop()
+        elif reddit_subs and not found_sources:
+            # Pure Reddit demand — use most common subreddit
+            d["source_subreddit"] = next(iter(reddit_subs))
 
     as_d = [d for d in demands if any(p.startswith("as_") for p in d.get("post_ids", []))]
     gp_d = [d for d in demands if any(p.startswith("gp_") for p in d.get("post_ids", []))]
