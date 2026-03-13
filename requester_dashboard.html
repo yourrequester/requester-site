@@ -38,6 +38,24 @@
   --body: 'DM Sans', system-ui, sans-serif;
 }
 
+/* ── Dark mode ── */
+body[data-theme="dark"] {
+  --cream: #111010;
+  --white: #1c1b19;
+  --ink: #f0ece6;
+  --ink-mid: #b0a89e;
+  --ink-light: #6e6860;
+  --ink-faint: #2e2c28;
+  --accent-light: #2a1a0e;
+  --green-light: #0e2318;
+  --blue-light: #0e1828;
+  --gold-light: #1e1808;
+  --red-light: #200e0e;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -46,6 +64,7 @@ body {
   color: var(--ink);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  transition: background .2s, color .2s;
 }
 
 /* ── Header ── */
@@ -925,6 +944,13 @@ header {
   transition: border-color .15s, box-shadow .15s;
 }
 .google-signin-btn:hover { border-color: var(--ink-mid); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.dark-toggle {
+  background: none; border: 1px solid var(--ink-faint); border-radius: 999px;
+  width: 32px; height: 32px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+}
+.dark-toggle:hover { border-color: var(--ink-mid); }
 .sign-in-btn {
   display: inline-flex;
   align-items: center;
@@ -990,14 +1016,9 @@ header {
   <div class="logo">
     <div class="logo-icon">R</div>
     <span class="logo-name">Requester</span>
-    <span class="logo-tagline">— community request intelligence</span>
   </div>
   <div class="header-right">
-    <div class="status-pill">
-      <div class="status-dot" id="status-dot"></div>
-      <span id="status-text">No data loaded</span>
-    </div>
-    <span class="meta-text" id="meta-time"></span>
+    <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
     <!-- Auth area -->
     <div class="auth-area" id="auth-area">
       <button id="google-signin-btn" class="google-signin-btn" onclick="triggerSignIn()">
@@ -1312,7 +1333,7 @@ function triggerSignIn() {
   if (!_sb) { showToast('Auth not configured — add Supabase keys'); return; }
   _sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: location.origin + location.pathname },
+    options: { redirectTo: 'https://requester.org/requester_dashboard.html' },
   });
 }
 
@@ -1459,6 +1480,13 @@ function shareSubject(subject, event) {
 
 // ── Toast ─────────────────────────────────────────────────
 let _toastTimer = null;
+function toggleDark() {
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  document.body.setAttribute('data-theme', isDark ? '' : 'dark');
+  document.getElementById('dark-toggle').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('requester_theme', isDark ? 'light' : 'dark');
+}
+
 function showToast(msg) {
   const el = document.getElementById('toast');
   if (!el) return;
@@ -1514,6 +1542,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (IS_ADMIN) {
     const btn = document.getElementById('settings-btn');
     if (btn) btn.style.display = 'flex';
+  }
+
+  // Restore dark mode preference
+  const savedTheme = localStorage.getItem('requester_theme');
+  if (savedTheme === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+    const btn = document.getElementById('dark-toggle');
+    if (btn) btn.textContent = '☀️';
   }
 
   const loaded = await tryAutoLoad();
@@ -1737,8 +1773,7 @@ function _demandSources(d) {
       if (!p) continue;
       if      (p._source === 'appstore')   { s.add('__appstore__');  continue; }
       else if (p._source === 'googleplay') { s.add('__googleplay__'); continue; }
-      const sub = cleanSub(p._subreddit || '');
-      if (sub) s.add('reddit:' + sub);
+      if (p._subreddit) s.add('__reddit__');
     }
   }
   const ss = d.source_subreddit || '';
@@ -1747,7 +1782,7 @@ function _demandSources(d) {
   else if (ss === 'trustpilot') s.add('__trustpilot__');
   else if (ss === 'youtube')    s.add('__youtube__');
   else if (ss === 'steam')      s.add('__steam__');
-  else if (ss) { const sub = cleanSub(ss); if (sub) s.add('reddit:' + sub); }
+  else if (ss && !['appstore','googleplay','trustpilot','youtube','steam'].includes(ss)) s.add('__reddit__');
   return s;
 }
 
@@ -1782,10 +1817,10 @@ function buildSourcePills() {
     let label, cls;
     if      (src === '__appstore__')   { label = '📱 App Store';  cls = 'appstore';   }
     else if (src === '__googleplay__') { label = '▶ Google Play'; cls = 'googleplay'; }
-    else if (src === '__trustpilot__') { label = '⭐ Trustpilot'; cls = 'reddit';     }
-    else if (src === '__youtube__')    { label = '▶ YouTube';     cls = 'reddit';     }
-    else if (src === '__steam__')      { label = '🎮 Steam';      cls = 'reddit';     }
-    else { label = `r/${src.replace('reddit:', '')}`; cls = 'reddit'; }
+    else if (src === '__trustpilot__') { label = '⭐ Trustpilot'; cls = 'trustpilot'; }
+    else if (src === '__youtube__')    { label = '📺 YouTube';    cls = 'youtube';    }
+    else if (src === '__steam__')      { label = '🎮 Steam';      cls = 'steam';      }
+    else if (src === '__reddit__')     { label = '💬 Reddit';     cls = 'reddit';     }
     const n = counts[src] || 0;
     return `<button class="source-pill ${cls}" data-source="${src}" onclick="toggleSource('${src}', this)">${label} <span style="opacity:.55;font-size:10px;font-weight:400;">${n}</span></button>`;
   }).join('');
@@ -1912,8 +1947,6 @@ function selectRequest(id) {
     const isStore       = isAppStore || isGooglePlay || isTrustpilot || isSteam || isYouTube;
     const redditUrl    = isStore ? null : `https://reddit.com${p.permalink||''}`;
     const topComment   = p.top_comments?.[0];
-    const stars        = p._rating ? '★'.repeat(p._rating) + '☆'.repeat(5-p._rating) : '★☆☆☆☆';
-
     // Date formatting
     const dateStr = p.created_utc
       ? new Date(p.created_utc * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
@@ -1922,7 +1955,7 @@ function selectRequest(id) {
     const sourceEmoji = isAppStore ? '📱 App Store' : isGooglePlay ? '▶ Google Play'
       : isTrustpilot ? '⭐ Trustpilot' : isSteam ? '🎮 Steam' : isYouTube ? '📺 YouTube' : null;
     const scoreLabel = sourceEmoji
-      ? (p._rating ? `${'★'.repeat(p._rating)}${'☆'.repeat(5-p._rating)} · ${sourceEmoji} · ${dateStr}` : `${sourceEmoji} · ${dateStr}`)
+      ? `${sourceEmoji} · ${dateStr}`
       : `↑ ${(p.score||0).toLocaleString()} · reddit.com · ${dateStr}`;
     const preview = isStore ? p.selftext : (topComment ? topComment.text : null);
     const title = sanitize(p.title) || (isAppStore ? 'App Store Review' : isGooglePlay ? 'Google Play Review' : isTrustpilot ? 'Trustpilot Review' : isSteam ? 'Steam Review' : isYouTube ? 'YouTube Comment' : pid);
@@ -2141,5 +2174,20 @@ async function saveSettings() {
   }
 }
 </script>
+
+<!-- Footer -->
+<footer style="border-top:1px solid var(--ink-faint);margin-top:60px;padding:32px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="logo-icon" style="width:26px;height:26px;font-size:13px;">R</div>
+    <span style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);">Requester</span>
+  </div>
+  <div style="font-size:13px;color:var(--ink-mid);text-align:center;">
+    Tracking what people are asking for — across every platform.
+  </div>
+  <div style="font-size:13px;color:var(--ink-mid);">
+    Business inquiries: <a href="mailto:YourRequester@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:500;">YourRequester@gmail.com</a>
+  </div>
+</footer>
+
 </body>
 </html>
