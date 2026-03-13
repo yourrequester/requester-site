@@ -1044,7 +1044,7 @@ header {
   <div class="hero-inner">
     <div class="hero-text">
       <h1 id="hero-title">What are people asking for?</h1>
-      <p id="hero-sub">Load a <code>requester_results.json</code> file to see the most-requested changes, fixes, and features — ranked by community request.</p>
+      <p id="hero-sub">The most-requested changes, fixes, and features — ranked by community demand across every platform.</p>
     </div>
     <div class="hero-stats" id="hero-stats" style="display:none;">
       <div class="hero-stat">
@@ -1063,17 +1063,11 @@ header {
   </div>
 </div>
 
-<!-- Upload -->
-<div class="upload-section" id="upload-section">
-  <div class="upload-card" id="upload-card">
-    <input type="file" id="file-input" accept=".json">
-    <div class="upload-icon">📂</div>
-    <div class="upload-title">Drop your results file here</div>
-    <div class="upload-sub">
-      Drag and drop <strong>requester_results.json</strong> onto this area,<br>
-      or <span onclick="document.getElementById('file-input').click()">click to browse</span> your files.
-    </div>
-  </div>
+<!-- Loading / error state (shown only if data fetch fails) -->
+<div id="loading-state" style="display:none;text-align:center;padding:80px 20px;color:var(--ink-mid);font-size:15px;">
+  <div style="font-size:32px;margin-bottom:16px;">⏳</div>
+  <div style="font-weight:500;margin-bottom:8px;">Data is being refreshed</div>
+  <div style="font-size:13px;">Check back shortly — results update automatically every few hours.</div>
 </div>
 
 <!-- Main content (hidden until data loaded) -->
@@ -1544,31 +1538,33 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (btn) btn.style.display = 'flex';
   }
 
-  // Restore dark mode preference
+  // Dark mode: respect system preference, allow manual override
   const savedTheme = localStorage.getItem('requester_theme');
-  if (savedTheme === 'dark') {
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const useDark    = savedTheme ? savedTheme === 'dark' : systemDark;
+  if (useDark) {
     document.body.setAttribute('data-theme', 'dark');
     const btn = document.getElementById('dark-toggle');
     if (btn) btn.textContent = '☀️';
   }
+  // Follow system changes if user hasn't manually set a preference
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('requester_theme')) {
+      document.body.setAttribute('data-theme', e.matches ? 'dark' : '');
+      const btn = document.getElementById('dark-toggle');
+      if (btn) btn.textContent = e.matches ? '☀️' : '🌙';
+    }
+  });
 
   const loaded = await tryAutoLoad();
-  if (!loaded) document.getElementById('upload-section').style.display = '';
+  if (!loaded) document.getElementById('loading-state').style.display = '';
   if (loaded) applyUrlParams();
 
   // Init Supabase auth (loads session + vote counts after data is ready)
   await initAuth();
 });
 
-// ── File loading ─────────────────────────────────────────
-const uploadCard = document.getElementById('upload-card');
-const fileInput  = document.getElementById('file-input');
-
-uploadCard.addEventListener('dragover', e => { e.preventDefault(); uploadCard.classList.add('drag-over'); });
-uploadCard.addEventListener('dragleave', () => uploadCard.classList.remove('drag-over'));
-uploadCard.addEventListener('drop', e => { e.preventDefault(); uploadCard.classList.remove('drag-over'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
-
+// ── File loading (dev only, upload UI removed from public site) ───────────
 function loadFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
@@ -1628,11 +1624,7 @@ function ingestData(data) {
   }));
   postLookup = data.post_lookup || {};
 
-  // Header
-  document.getElementById('status-dot').classList.add('live');
-  document.getElementById('status-text').textContent = 'Data loaded';
-  const scraped = data.scraped_at ? new Date(data.scraped_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : '';
-  document.getElementById('meta-time').textContent = scraped ? `Scraped ${scraped}` : '';
+  // (status indicators removed — data always shown)
 
   // Hero
   const subs = (data.subreddits || (data.subreddit ? [data.subreddit] : [])).map(s => s.replace(/^\/?r\//i,''));
