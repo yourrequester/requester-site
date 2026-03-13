@@ -1,0 +1,112 @@
+{
+  "target_name": "Airlines",
+  "subreddits": [
+    "delta",
+    "unitedairlines",
+    "americanairlines",
+    "southwestairlines",
+    "alaska_airlines",
+    "flights",
+    "airlines",
+    "travel",
+    "awardtravel",
+    "airtravel",
+    "frequentflyers"
+  ],
+  "sort_modes": [
+    "hot",
+    "top",
+    "new",
+    "controversial"
+  ],
+  "post_limit": 100,
+  "max_comments": 20,
+  "max_posts_for_ai": 200,
+  "appstore_apps": [
+    {
+      "name": "Delta",
+      "app_id": "388491656"
+    },
+    {
+      "name": "United",
+      "app_id": "449945214"
+    },
+    {
+      "name": "American",
+      "app_id": "382698565"
+    },
+    {
+      "name": "Southwest",
+      "app_id": "344542975"
+    },
+    {
+      "name": "Alaska",
+      "app_id": "356143077"
+    }
+  ],
+  "appstore_pages": 12,
+  "appstore_min_rating": 3,
+  "googleplay_apps": [
+    {
+      "name": "Delta",
+      "app_id": "com.delta.mobile.android"
+    },
+    {
+      "name": "United",
+      "app_id": "com.united.mobile.android"
+    },
+    {
+      "name": "American",
+      "app_id": "com.aa.android"
+    },
+    {
+      "name": "Southwest",
+      "app_id": "com.southwestairlines.mobile"
+    },
+    {
+      "name": "Alaska",
+      "app_id": "com.alaskaairlines.android"
+    }
+  ],
+  "googleplay_count": 500,
+  "googleplay_max_rating": 3,
+  "trustpilot_companies": [
+    {
+      "name": "Delta",
+      "slug": "delta.com"
+    },
+    {
+      "name": "United",
+      "slug": "united.com"
+    },
+    {
+      "name": "American",
+      "slug": "aa.com"
+    },
+    {
+      "name": "Southwest",
+      "slug": "southwest.com"
+    },
+    {
+      "name": "Alaska",
+      "slug": "alaskaair.com"
+    }
+  ],
+  "trustpilot_pages": 8,
+  "trustpilot_max_rating": 3,
+  "steam_apps": [],
+  "youtube_searches": [
+    "Delta Airlines complaints 2025",
+    "United Airlines bad experience",
+    "American Airlines problems",
+    "Southwest Airlines complaints",
+    "Alaska Airlines feedback",
+    "Delta Airlines feature request",
+    "United Airlines app issues",
+    "American Airlines customer service problem",
+    "Southwest Airlines boarding issues",
+    "best airline app features missing"
+  ],
+  "youtube_max_results": 200,
+  "google_trends_boost": true
+}

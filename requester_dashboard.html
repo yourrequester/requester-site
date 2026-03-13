@@ -56,6 +56,15 @@ body[data-theme="dark"] {
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
 }
 
+body[data-theme="dark"] .request-card {
+  box-shadow: none;
+  border: 1px solid #333;
+}
+body[data-theme="dark"] .request-card:hover {
+  border-color: #555;
+  box-shadow: none;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -193,12 +202,20 @@ header {
 
 .hero-stats {
   display: flex;
-  gap: 32px;
   flex-shrink: 0;
+  border: 1px solid var(--ink-faint);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--white);
 }
 
 .hero-stat {
-  text-align: right;
+  text-align: center;
+  padding: 14px 24px;
+}
+
+.hero-stat + .hero-stat {
+  border-left: 1px solid var(--ink-faint);
 }
 
 .hero-stat-val {
@@ -378,9 +395,10 @@ header {
 }
 .source-pill:hover { border-color: var(--accent); color: var(--accent); }
 .source-pill.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: white;
+  background: var(--accent-light);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
 }
 .source-pill.appstore.active    { background: #1a5fa0; border-color: #1a5fa0; }
 .source-pill.googleplay.active { background: #01875f; border-color: #01875f; }
@@ -413,10 +431,10 @@ header {
   background: var(--white);
   border-radius: var(--radius);
   border: 1px solid var(--ink-faint);
-  padding: 20px 24px;
+  padding: 24px 28px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 24px rgba(26,24,20,0.07);
   animation: card-in 0.35s ease both;
   position: relative;
   overflow: hidden;
@@ -520,20 +538,21 @@ header {
 }
 
 .gravity-score {
-  font-family: var(--display);
+  font-family: 'SF Mono','Consolas','Monaco',monospace;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 900;
   color: var(--ink);
   letter-spacing: -0.02em;
   line-height: 1;
 }
 
 .gravity-label {
-  font-size: 10px;
+  font-size: 8pt;
   color: var(--ink-light);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  text-align: right;
+  text-align: center;
+  margin-top: 3px;
 }
 
 .card-bottom {
@@ -554,17 +573,31 @@ header {
   border-radius: 999px;
 }
 
-.tag-bug      { background: var(--red-light);   color: var(--red); }
-.tag-feature  { background: var(--blue-light);  color: var(--blue); }
-.tag-content  { background: var(--green-light); color: var(--green); }
-.tag-ui       { background: #f3eef8;            color: #6b3fa0; }
-.tag-policy   { background: var(--gold-light);  color: var(--gold); }
-.tag-other    { background: var(--cream);       color: var(--ink-mid); border: 1px solid var(--ink-faint); }
+.tag-bug      { background: rgba(192,57,43,0.10);   color: var(--red); }
+.tag-feature  { background: rgba(26,74,138,0.10);   color: var(--blue); }
+.tag-content  { background: rgba(26,122,74,0.10);   color: var(--green); }
+.tag-ui       { background: rgba(107,63,160,0.10);  color: #6b3fa0; }
+.tag-policy   { background: rgba(176,125,16,0.10);  color: var(--gold); }
+.tag-other    { background: rgba(154,149,144,0.10); color: var(--ink-mid); }
 
 .thread-count {
   font-size: 12px;
   color: var(--ink-light);
 }
+
+/* ── Signal bar chart ── */
+.signal-chart { padding: 12px 16px 4px; }
+.signal-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.signal-bar-label { font-size: 11px; color: var(--ink-mid); width: 70px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signal-bar-track { flex: 1; height: 6px; background: var(--ink-faint); border-radius: 3px; overflow: hidden; }
+.signal-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s ease; }
+.signal-bar-count { font-size: 10px; color: var(--ink-light); width: 28px; text-align: right; flex-shrink: 0; }
+
+/* ── Platform icons ── */
+.platform-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 12px; color: var(--ink-mid); }
+.platform-row + .platform-row { border-top: 1px solid var(--ink-faint); }
+.platform-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.platform-count { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--ink); font-family: 'SF Mono','Consolas',monospace; }
 
 /* ── Right sidebar ── */
 .sidebar { display: flex; flex-direction: column; gap: 16px; }
@@ -1048,16 +1081,12 @@ header {
     </div>
     <div class="hero-stats" id="hero-stats" style="display:none;">
       <div class="hero-stat">
-        <div class="hero-stat-val" id="hs-posts">—</div>
-        <div class="hero-stat-label" id="hs-posts-label">Posts Scanned</div>
-      </div>
-      <div class="hero-stat">
         <div class="hero-stat-val" id="hs-requests">—</div>
         <div class="hero-stat-label" id="hs-requests-label">Requests Found</div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-val" id="hs-companies">—</div>
-        <div class="hero-stat-label" id="hs-companies-label">Products Tagged</div>
+        <div class="hero-stat-label" id="hs-companies-label">Products Tracked</div>
       </div>
     </div>
   </div>
@@ -1101,15 +1130,18 @@ header {
 
     <div class="sidebar" style="position:sticky;top:80px;max-height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;">
 
-      <!-- Overview stats -->
+      <!-- Overview: signal volume bar chart -->
       <div class="widget" id="stats-widget">
-        <div class="widget-head"><span class="widget-title">Overview</span><span id="subreddit-badge" style="font-size:12px;color:var(--ink-light);"></span></div>
-        <div class="stats-row">
-          <div class="stat-box"><div class="stat-val" id="sw-posts">—</div><div class="stat-lbl" id="sw-posts-lbl">Posts</div></div>
-          <div class="stat-box"><div class="stat-val" id="sw-requests">—</div><div class="stat-lbl" id="sw-requests-lbl">Requests</div></div>
-          <div class="stat-box"><div class="stat-val" id="sw-score">—</div><div class="stat-lbl">Top Score</div></div>
-          <div class="stat-box"><div class="stat-val" id="sw-companies">—</div><div class="stat-lbl" id="sw-companies-lbl">Products</div></div>
+        <div class="widget-head"><span class="widget-title">Signal Volume</span></div>
+        <div class="signal-chart" id="signal-chart">
+          <div style="color:var(--ink-light);font-size:12px;padding:8px 0;">Loading…</div>
         </div>
+      </div>
+
+      <!-- Platforms breakdown -->
+      <div class="widget" id="platforms-widget" style="display:none;">
+        <div class="widget-head"><span class="widget-title">Platforms</span></div>
+        <div id="platforms-body"></div>
       </div>
 
       <!-- Request detail -->
@@ -1119,9 +1151,10 @@ header {
           <span id="detail-rank" style="font-size:12px;color:var(--ink-light);"></span>
         </div>
         <div class="widget-body" id="detail-body">
-          <div class="detail-placeholder">
-            <div class="detail-placeholder-icon">👆</div>
-            Select any request on the left<br>to see its full summary,<br>source threads, and community comments.
+          <div class="detail-placeholder" style="text-align:center;padding:32px 20px;">
+            <div style="font-size:52px;opacity:0.12;line-height:1;margin-bottom:14px;">◎</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink-mid);margin-bottom:4px;">Nothing selected</div>
+            <div style="font-size:12px;color:var(--ink-light);line-height:1.5;">Click any request card<br>to explore its details.</div>
           </div>
         </div>
       </div>
@@ -1677,35 +1710,21 @@ function ingestData(data) {
   }
 
   document.getElementById('hero-title').textContent = heroTitle;
+  _defaultHeroTitle = heroTitle;
 
   // Subtitle: always show sources as small text
-  const sourceList = allSources.join(' · ');
-  const postCount = (data.posts_scanned||0) + (data.appstore_reviews||0) + (data.googleplay_reviews||0) + (data.trustpilot_reviews||0) + (data.steam_reviews||0) + (data.youtube_comments||0);
+  // Hero subtitle — sources only (no signal count)
   const heroSub = document.getElementById('hero-sub');
-  heroSub.textContent = `${postCount.toLocaleString()} signals scanned · ${sourceList}`;
+  heroSub.textContent = allSources.join(' · ');
   heroSub.style.display = '';
-  document.getElementById('hs-posts').textContent = (data.posts_scanned||0).toLocaleString();
-  const postsScanned = data.posts_scanned||0;
-  document.getElementById('hs-posts-label').textContent = postsScanned === 1 ? 'Post Scanned' : 'Posts Scanned';
-  document.getElementById('hs-requests').textContent = allRequests.length;
-  const companyCount = new Set(allRequests.map(d=>d.subject)).size;
-  document.getElementById('hs-companies').textContent = companyCount;
-  document.getElementById('hs-companies-label').textContent = companyCount === 1 ? 'Product Tagged' : 'Products Tagged';
-  document.getElementById('hero-stats').style.display = 'flex';
 
-  // Stats widget
-  document.getElementById('subreddit-badge').textContent = allSources.join(' · ');
-  document.getElementById('subreddit-badge').title = allSources.join(', ');
-  document.getElementById('sw-posts').textContent = (data.posts_scanned||0).toLocaleString();
-  document.getElementById('sw-posts-lbl').textContent = (data.posts_scanned||0) === 1 ? 'Post' : 'Posts';
-  const reqCount = allRequests.length;
-  document.getElementById('sw-requests').textContent = reqCount;
-  document.getElementById('sw-requests-lbl').textContent = reqCount === 1 ? 'Request' : 'Requests';
-  document.getElementById('hs-requests-label').textContent = reqCount === 1 ? 'Request Found' : 'Requests Found';
-  const top = allRequests[0]?.gravity_score || 0;
-  document.getElementById('sw-score').textContent = top >= 1000 ? (top/1000).toFixed(1)+'k' : Math.round(top);
-  document.getElementById('sw-companies').textContent = companyCount;
-  document.getElementById('sw-companies-lbl').textContent = companyCount === 1 ? 'Product' : 'Products';
+  // Hero stats — requests + products only (no posts scanned)
+  const companyCount = new Set(allRequests.map(d=>d.subject)).size;
+  document.getElementById('hs-requests').textContent = allRequests.length;
+  document.getElementById('hs-requests-label').textContent = allRequests.length === 1 ? 'Request Found' : 'Requests Found';
+  document.getElementById('hs-companies').textContent = companyCount;
+  document.getElementById('hs-companies-label').textContent = companyCount === 1 ? 'Product Tracked' : 'Products Tracked';
+  document.getElementById('hero-stats').style.display = 'flex';
 
   // Show/hide sections
   const ls = document.getElementById('loading-state');
@@ -1713,9 +1732,89 @@ function ingestData(data) {
   document.getElementById('main-layout').classList.add('visible');
   document.getElementById('cat-widget').style.display = 'block';
 
+  buildSignalChart(data);
+  buildPlatformWidget(data);
   buildCats();
   buildSourcePills();
   render();
+}
+
+// ── Signal volume bar chart (item 1) ─────────────────────
+function buildSignalChart(data) {
+  // Count total post_ids per subject across all demands
+  const counts = {};
+  allRequests.forEach(d => {
+    const subj = (d.subject || 'Other').split(' ')[0]; // first word keeps it short
+    counts[subj] = (counts[subj] || 0) + (d.post_ids || []).length;
+  });
+  const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const max = Math.max(...entries.map(e => e[1]), 1);
+  const html = entries.map(([name, val]) => `
+    <div class="signal-bar-row">
+      <div class="signal-bar-label" title="${name}">${name}</div>
+      <div class="signal-bar-track"><div class="signal-bar-fill" style="width:${(val/max*100).toFixed(1)}%"></div></div>
+      <div class="signal-bar-count">${val}</div>
+    </div>`).join('');
+  document.getElementById('signal-chart').innerHTML = html || '<div style="color:var(--ink-light);font-size:12px;padding:8px 0;">No data</div>';
+}
+
+// ── Platform icons widget (item 2) ────────────────────────
+const PLATFORM_ICONS = {
+  appstore:   { label: 'App Store',   svg: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="#1a1814"/></svg>' },
+  googleplay: { label: 'Google Play', svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 20.5v-17c0-.83 1-.95 1.4-.4l14 8.5c.4.24.4.76 0 1L4.4 21c-.4.5-1.4.33-1.4-.5z" fill="#01875f"/></svg>' },
+  reddit:     { label: 'Reddit',      svg: '<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#FF4500"/><path d="M20 12a2 2 0 00-2-2 2 2 0 00-1.4.6A9.7 9.7 0 0012.5 9l.9-4.3 2.9.6a1.4 1.4 0 101.4-1.4 1.4 1.4 0 00-1.3.9l-3.2-.7a.4.4 0 00-.4.3l-1 4.8a9.7 9.7 0 00-4.5 1.6A2 2 0 004 12a2 2 0 001 1.7 3.6 3.6 0 000 .5c0 2.6 3.1 4.8 6.9 4.8s6.9-2.1 6.9-4.8a4 4 0 000-.5A2 2 0 0020 12zm-12 1.7a1.2 1.2 0 111.2 1.2A1.2 1.2 0 018 13.7zm6.7 3.2c-.8.8-2.3.9-2.7.9s-1.9 0-2.7-.9a.3.3 0 01.4-.4c.5.5 1.6.7 2.3.7s1.8-.2 2.3-.7a.3.3 0 01.4.4zm-.2-2a1.2 1.2 0 111.2-1.2 1.2 1.2 0 01-1.2 1.2z" fill="white"/></svg>' },
+  trustpilot: { label: 'Trustpilot',  svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="#00B67A"/></svg>' },
+  youtube:    { label: 'YouTube',     svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z" fill="#FF0000"/></svg>' },
+  steam:      { label: 'Steam',       svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M11.98 0C5.37 0 0 5.25 0 11.74c0 4.96 3.07 9.22 7.43 10.97l2.44-6.1a3.45 3.45 0 01-1.34-2.72 3.48 3.48 0 013.48-3.48 3.48 3.48 0 013.48 3.48c0 .63-.18 1.21-.48 1.71l-6.1 2.47C10.12 19.97 11.02 20 11.98 20 18.62 20 24 14.75 24 8.26 24 3.7 21.53 0 11.98 0z" fill="#171a21"/></svg>' },
+};
+
+function buildPlatformWidget(data) {
+  const sourceCounts = {
+    appstore:   (data.appstore_reviews   || 0),
+    googleplay: (data.googleplay_reviews || 0),
+    reddit:     (data.posts_scanned      || 0),
+    trustpilot: (data.trustpilot_reviews || 0),
+    youtube:    (data.youtube_comments   || 0),
+    steam:      (data.steam_reviews      || 0),
+  };
+  const rows = Object.entries(sourceCounts)
+    .filter(([,n]) => n > 0)
+    .sort((a,b) => b[1]-a[1]);
+  if (rows.length === 0) return;
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+  const html = rows.map(([key, n]) => {
+    const p = PLATFORM_ICONS[key];
+    return `<div class="platform-row">
+      <div class="platform-icon">${p.svg}</div>
+      <span>${p.label}</span>
+      <span class="platform-count">${fmt(n)}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('platforms-body').innerHTML = html;
+  document.getElementById('platforms-widget').style.display = '';
+}
+
+// ── Dynamic hero title from search (item 14) ──────────────
+const INDUSTRY_MAP = [
+  { words: ['delta','united','american','southwest','alaska','airline','airlines','flight','flights','aviation'], label: 'Airlines' },
+  { words: ['netflix','hulu','disney','streaming','video','watch'], label: 'Streaming' },
+  { words: ['game','gaming','steam','xbox','playstation','nintendo'], label: 'Gaming' },
+  { words: ['bank','banking','finance','credit','loan','payment'], label: 'Finance' },
+];
+let _defaultHeroTitle = 'What the internet is requesting';
+
+function updateHeroTitle(query) {
+  if (!query || !query.trim()) {
+    document.getElementById('hero-title').textContent = _defaultHeroTitle;
+    return;
+  }
+  const q = query.toLowerCase();
+  const industry = INDUSTRY_MAP.find(i => i.words.some(w => q.includes(w)));
+  if (industry) {
+    document.getElementById('hero-title').textContent = `Top requests from the ${industry.label} industry`;
+  } else {
+    document.getElementById('hero-title').textContent = `Results for "${query.trim()}"`;
+  }
 }
 
 function buildCats() {
@@ -2016,6 +2115,7 @@ document.querySelectorAll('.pill').forEach(btn => {
 
 document.getElementById('search-input').addEventListener('input', e => {
   activeSearch = e.target.value;
+  updateHeroTitle(activeSearch);
   render();
 });
 

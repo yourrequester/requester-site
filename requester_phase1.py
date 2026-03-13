@@ -587,7 +587,7 @@ def fetch_google_trends_boost(demands, target_name):
 
     try:
         pytrends = TrendReq(hl="en-US", tz=360, timeout=(10, 25))
-        for i in range(0, min(len(demands), 10), 5):
+        for i in range(0, min(len(demands), 50), 5):
             batch = demands[i:i+5]
             terms = []
             for d in batch:
@@ -971,6 +971,9 @@ def run():
         if contains_intent(p.get("title","") + " " + p.get("selftext",""))
     ]
     print(f"  Intent-bearing posts: {len(intent_posts)} / {len(unique_posts)}")
+
+    # Sort by score descending so the highest-upvoted posts are analyzed first
+    intent_posts.sort(key=lambda p: p.get("score", 0), reverse=True)
 
     print(f"\n💬 Fetching comments (takes ~{min(len(intent_posts), MAX_POSTS_FOR_AI)*1.2:.0f}s)...")
     enriched = []
