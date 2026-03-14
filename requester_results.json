@@ -46,526 +46,15 @@
     "Southwest Airlines boarding issues",
     "best airline app features missing"
   ],
-  "scraped_at": "2026-03-14T05:41:58.110221+00:00",
+  "scraped_at": "2026-03-14T06:09:29.343993+00:00",
   "posts_scanned": 0,
   "appstore_reviews": 1507,
   "googleplay_reviews": 1884,
   "trustpilot_reviews": 719,
   "steam_reviews": 0,
   "youtube_comments": 0,
-  "requests_found": 35,
-  "leaderboard": [
-    {
-      "subject": "Delta",
-      "action": "Fix app crashes that occur when launching, logging in, viewing boarding passes, accessing maps, and performing other core functions",
-      "category": "Bug Fix",
-      "summary": "Users report frequent app crashes across multiple functions including startup, login, boarding pass display, terminal maps, Sky Club searches, and seat selection. These crashes occur at critical moments like airport check-in, making the app unreliable for travel. This is the most widespread complaint affecting usability.",
-      "post_ids": [
-        "as_13833024914",
-        "as_13831635496",
-        "as_13799509365",
-        "as_13797079647",
-        "as_13791392046",
-        "as_13681421141",
-        "as_13681389384",
-        "as_13680887340",
-        "as_13679026953",
-        "as_13677773183",
-        "as_13675661897",
-        "as_13675923895",
-        "as_13673937238",
-        "as_13677545929",
-        "as_13674823132",
-        "as_13804128980"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-app-crashes-that-occur-when-launching-logging-in-viewing-boarding-pass",
-      "gravity_score": 1984.5,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix login and authentication issues including Face ID failures and password reset problems",
-      "category": "Bug Fix",
-      "summary": "Users experience persistent login failures, Face ID disabling after each logout, cumbersome password reset processes, and account lockouts. Some users report needing to reset passwords multiple times or recreate accounts repeatedly. This prevents access to the app at critical travel moments.",
-      "post_ids": [
-        "as_13838796072",
-        "as_13838639879",
-        "as_13836800741",
-        "as_13707178308",
-        "as_13706455292",
-        "as_13682963926",
-        "as_13667066393",
-        "as_13662627720",
-        "as_13770878595",
-        "as_13619084790",
-        "as_13621645781",
-        "as_13561855290"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-login-and-authentication-issues-including-face-id-failures-and-passwor",
-      "gravity_score": 1236.4
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix SkyMiles and account balance not updating automatically without logging out and back in",
-      "category": "Bug Fix",
-      "summary": "Users report that miles balances, MQD information, and loyalty status fail to update in real-time or automatically. Many require deleting and reinstalling the app or logging out/in repeatedly to see current miles. This breaks a core feature for frequent flyers who need to track their benefits.",
-      "post_ids": [
-        "as_13836435520",
-        "as_13824072448",
-        "as_13827013225",
-        "as_13810818224",
-        "as_13793689732",
-        "as_13682988446",
-        "as_13687217846",
-        "as_13784590948",
-        "as_13616829552"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-skymiles-and-account-balance-not-updating-automatically-without-loggin",
-      "gravity_score": 860.1,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix check-in failures and seat selection errors that prevent successful booking and flight modifications",
-      "category": "Bug Fix",
-      "summary": "Users report check-in never works on the first attempt, seat selection frequently fails with vague error messages, and upgrade attempts don't save or process. Booking flows fail partway through and require starting over. These are core travel functions that consistently malfunction.",
-      "post_ids": [
-        "as_13823144516",
-        "as_13813239560",
-        "as_13759729169",
-        "as_13645503259",
-        "as_13767623487",
-        "as_13646025555",
-        "as_13664400596",
-        "as_13676352756",
-        "as_13679468780",
-        "as_13622659517",
-        "as_13559931242"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-check-in-failures-and-seat-selection-errors-that-prevent-successful-bo",
-      "gravity_score": 767.4,
-      "trends_boost": 1.02
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix app performance issues including slow loading, excessive brightness adjustment, and memory errors",
-      "category": "Bug Fix",
-      "summary": "The app is slow to load, freezes frequently, automatically maxes phone brightness aggressively, and falsely reports low device memory. These performance and UX issues create friction during critical travel moments and degrade user experience.",
-      "post_ids": [
-        "as_13830193356",
-        "as_13791101992",
-        "as_13717160235",
-        "as_13681406708",
-        "as_13714773479"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-app-performance-issues-including-slow-loading-excessive-brightness-adj",
-      "gravity_score": 174.9
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix incorrect or missing information display across miles balance, lounge status, and flight details",
-      "category": "Bug Fix",
-      "summary": "The app shows wrong SkyMiles balances, status levels, and lounge availability. Lounge app says 'not busy' but arrives to find no seating. Data doesn't sync with website or AmEx app. This undermines trust in the app as an information source.",
-      "post_ids": [
-        "as_13789469205",
-        "as_13766942360",
-        "as_13749929800",
-        "as_13644439686"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-incorrect-or-missing-information-display-across-miles-balance-lounge-s",
-      "gravity_score": 123.9
-    },
-    {
-      "subject": "Delta",
-      "action": "Reduce excessive permissions requests and respect user privacy by not collecting unnecessary personal data",
-      "category": "Policy Change",
-      "summary": "Users report the app requests excessive permissions for health, fitness, contacts, and search history that aren't needed for airline functions. The app collects profitable customer data that users see as invasive surveillance.",
-      "post_ids": [
-        "as_13819865937",
-        "as_13642292248",
-        "as_13589504808",
-        "as_13577802551"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-reduce-excessive-permissions-requests-and-respect-user-privacy-by-not-coll",
-      "gravity_score": 120.7
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix flight information not updating in real-time and sending delayed or missing notifications",
-      "category": "Bug Fix",
-      "summary": "The app shows outdated flight information, doesn't send timely cancellation or delay alerts, and fails to update changed flight details quickly. Users discover changes by accident rather than through app notifications.",
-      "post_ids": [
-        "as_13823253758",
-        "as_13766595047",
-        "as_13589954305"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-flight-information-not-updating-in-real-time-and-sending-delayed-or-mi",
-      "gravity_score": 104.4
-    },
-    {
-      "subject": "Delta",
-      "action": "Support full international travel workflows including document upload and partner airline integration",
-      "category": "Feature Request",
-      "summary": "The app doesn't communicate flight type (domestic vs international), lacks ability to upload green cards alongside passports for US residents, and doesn't integrate well with partner airlines on codeshare flights. Users can't change seats or check bags on partner flights through the Delta app.",
-      "post_ids": [
-        "as_13750108929",
-        "as_13635968500",
-        "as_13652663568",
-        "as_13591598497",
-        "as_13780880111"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-support-full-international-travel-workflows-including-document-upload-and-",
-      "gravity_score": 100.8
-    },
-    {
-      "subject": "Delta",
-      "action": "Automatically sync and display booked trips in the app without requiring manual search",
-      "category": "Feature Request",
-      "summary": "Users must manually search for flights using confirmation numbers even when logged in, unlike competitors. The app doesn't auto-populate booked trips or remember family member bookings. This is poor UX for a loyalty app.",
-      "post_ids": [
-        "as_13721275675",
-        "as_13669346448",
-        "as_13666639090",
-        "as_13568646032",
-        "as_13563474644"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-automatically-sync-and-display-booked-trips-in-the-app-without-requiring-m",
-      "gravity_score": 60.5
-    },
-    {
-      "subject": "Delta",
-      "action": "Simplify and redesign the confusing check-in and booking flow with clearer navigation",
-      "category": "UI/UX",
-      "summary": "Users describe the check-in process as circuitous, confusing, and poorly designed with superimposed choices and careless visuals. The booking flow is cluttered with advertising, making it hard to navigate and complete purchases.",
-      "post_ids": [
-        "as_13574372378",
-        "as_13574025400",
-        "as_13767571366"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-simplify-and-redesign-the-confusing-check-in-and-booking-flow-with-clearer",
-      "gravity_score": 48.1
-    },
-    {
-      "subject": "Delta",
-      "action": "Enable ability to add multiple boarding passes to Apple Wallet simultaneously instead of one at a time",
-      "category": "Feature Request",
-      "summary": "Users cannot add multiple family members' boarding passes to Apple Wallet at once and must add them individually, which is inconvenient for group travel. Competitors like Southwest offer this functionality. This creates friction for families and group travelers.",
-      "post_ids": [
-        "as_13835353965"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-enable-ability-to-add-multiple-boarding-passes-to-apple-wallet-simultaneou",
-      "gravity_score": 40.8
-    },
-    {
-      "subject": "Delta",
-      "action": "Allow use of Apple Pay and wallet cards for payment during booking",
-      "category": "Feature Request",
-      "summary": "Users cannot pay with Apple Pay or cards saved in iPhone wallet, limiting payment options. When users do use Apple Pay to purchase, they're later blocked from early app check-in. This creates inconvenience and prevents early check-in privileges.",
-      "post_ids": [
-        "as_13768120344",
-        "as_13645700686",
-        "as_13642991544"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-allow-use-of-apple-pay-and-wallet-cards-for-payment-during-booking",
-      "gravity_score": 37.8
-    },
-    {
-      "subject": "Delta",
-      "action": "Do not force app update requirements that kick users out mid-travel on limited data connections",
-      "category": "Policy Change",
-      "summary": "The app completely blocks access until updated, with no option to defer. This is problematic for travelers with limited data who are at airports or in-flight. Users need ability to skip updates or defer them until after travel.",
-      "post_ids": [
-        "as_13823442593"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-do-not-force-app-update-requirements-that-kick-users-out-mid-travel-on-lim",
-      "gravity_score": 36.1
-    },
-    {
-      "subject": "Delta",
-      "action": "Cache boarding passes for offline viewing instead of requiring live data connection each time",
-      "category": "Feature Request",
-      "summary": "The app attempts to reload boarding passes every time they're accessed, causing hangs when coverage is spotty or unavailable. Users request the app cache boarding passes locally for offline access, which is critical functionality when traveling or experiencing poor connectivity.",
-      "post_ids": [
-        "as_13838796072"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-cache-boarding-passes-for-offline-viewing-instead-of-requiring-live-data-c",
-      "gravity_score": 32.8
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix ecredits and certificates tab and ensure points are properly assigned from flights",
-      "category": "Bug Fix",
-      "summary": "The certificates/ecredits tab is non-functional and customers cannot use their credits. Points from recent flights aren't being assigned to accounts. Customers are forced to book without using available credits and must call support for help.",
-      "post_ids": [
-        "as_13764496103",
-        "as_13732263181"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-ecredits-and-certificates-tab-and-ensure-points-are-properly-assigned-",
-      "gravity_score": 28.0
-    },
-    {
-      "subject": "Delta",
-      "action": "Automatically populate TSA PreCheck and frequent flyer information in the app rather than requiring manual entry each flight",
-      "category": "Feature Request",
-      "summary": "Users must manually enter PreCheck numbers, frequent flyer numbers, and other passenger details every time they check in despite being logged into the app. This is tedious and competitors handle this automatically. Users request the app save and auto-fill this critical information.",
-      "post_ids": [
-        "as_13687872417",
-        "as_13582971445",
-        "as_13610632948"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-automatically-populate-tsa-precheck-and-frequent-flyer-information-in-the-",
-      "gravity_score": 27.8,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Support the latest iOS versions and ensure app works on all iPhone models including iPhone Mini",
-      "category": "Bug Fix",
-      "summary": "The app doesn't work with iOS 16+ and iPhone Mini, requiring users to upgrade phones. Some users are locked out due to device incompatibility. This is a basic requirement for a modern app.",
-      "post_ids": [
-        "as_13744632144",
-        "as_13682969399",
-        "as_13606209035"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-support-the-latest-ios-versions-and-ensure-app-works-on-all-iphone-models-",
-      "gravity_score": 26.0
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix payment card storage that doesn't save cards properly or randomly re-adds deleted payment methods",
-      "category": "Bug Fix",
-      "summary": "The app fails to save credit card information despite multiple attempts, or randomly adds back old payment cards that users deliberately removed. Users must re-enter card details repeatedly during checkout.",
-      "post_ids": [
-        "as_13763923710",
-        "as_13676748708"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-payment-card-storage-that-doesn-t-save-cards-properly-or-randomly-re-a",
-      "gravity_score": 24.9
-    },
-    {
-      "subject": "Delta",
-      "action": "Allow specification of seat preference (aisle/middle/window) when upgrading to premium cabin",
-      "category": "Feature Request",
-      "summary": "When upgrading to premium cabin seats, users cannot specify seat location preference. Middle or window seats in premium are downgrades from aisle economy seats, but users have no way to decline these upgrades. The upgrade feature also fails to present options at check-in 90% of the time.",
-      "post_ids": [
-        "as_13783039730"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-allow-specification-of-seat-preference-aisle-middle-window-when-upgrading-",
-      "gravity_score": 21.2,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix companion passenger information not being saved during flight booking",
-      "category": "Bug Fix",
-      "summary": "When booking for multiple passengers, the app frequently fails to save companion information whether entered fresh or pulled from saved contacts. This makes the app unusable for group bookings and requires starting over.",
-      "post_ids": [
-        "as_13650287516",
-        "as_13674861630"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-companion-passenger-information-not-being-saved-during-flight-booking",
-      "gravity_score": 16.7,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Stop excessive and intrusive requests asking users to rate the app during critical tasks",
-      "category": "UI/UX",
-      "summary": "The app interrupts users with rating requests up to 4 times in a row while checking in for flights, blocking the ability to complete booking. These prompts appear at the most inopportune moments and frustrate users trying to complete time-sensitive tasks.",
-      "post_ids": [
-        "as_13574611779",
-        "as_13582005688"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-stop-excessive-and-intrusive-requests-asking-users-to-rate-the-app-during-",
-      "gravity_score": 16.5
-    },
-    {
-      "subject": "Delta",
-      "action": "Add ability to manually add TSA PreCheck and Global Entry numbers to profile",
-      "category": "Feature Request",
-      "summary": "Users cannot manually input or update TSA PreCheck or Global Entry numbers in the app, requiring them to enter at check-in each time. The app also doesn't retrieve new PreCheck numbers properly, blocking security benefits.",
-      "post_ids": [
-        "as_13582971445",
-        "as_13610632948"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-add-ability-to-manually-add-tsa-precheck-and-global-entry-numbers-to-profi",
-      "gravity_score": 16.5
-    },
-    {
-      "subject": "Delta",
-      "action": "Show all available flights when searching or rebooking, not just a limited subset",
-      "category": "Feature Request",
-      "summary": "When rebooking canceled flights or searching, the app doesn't display all available options, limiting user choice. Users also cannot see seat availability or standby status. Competitors provide more complete flight visibility.",
-      "post_ids": [
-        "as_13766595047"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-show-all-available-flights-when-searching-or-rebooking-not-just-a-limited-",
-      "gravity_score": 14.9
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix app signing users out unexpectedly at the airport during critical travel times",
-      "category": "Bug Fix",
-      "summary": "Users report being logged out by the app specifically at airports, forcing them to re-authenticate at critical moments. This happens every flight for some users and creates panic when trying to board.",
-      "post_ids": [
-        "as_13763923710"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-app-signing-users-out-unexpectedly-at-the-airport-during-critical-trav",
-      "gravity_score": 13.9,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Support bag payment during check-in and ensure pricing clearly displays for additional services",
-      "category": "Feature Request",
-      "summary": "Users cannot add or pay for baggage fees through the app during check-in and must handle this at the airport. The app also doesn't clearly communicate baggage allowance versus paid options, creating confusion.",
-      "post_ids": [
-        "as_13583580153",
-        "as_13639603855"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-support-bag-payment-during-check-in-and-ensure-pricing-clearly-displays-fo",
-      "gravity_score": 13.5
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix widget functionality which is currently blank and non-functional",
-      "category": "Bug Fix",
-      "summary": "The home screen widget is completely broken and displays blank. Widgets are essential for quickly tracking flights and bookings at a glance without opening the full app. This is neglected despite being valuable functionality.",
-      "post_ids": [
-        "as_13738076627",
-        "as_13670794142"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-widget-functionality-which-is-currently-blank-and-non-functional",
-      "gravity_score": 12.5
-    },
-    {
-      "subject": "Delta",
-      "action": "Allow booking of one-way and multi-city flights on iPad app, not just round-trip",
-      "category": "Feature Request",
-      "summary": "The iPad app is stuck on round-trip booking mode and doesn't allow selection of one-way or multi-city options. This limits functionality for users on tablets compared to the full website.",
-      "post_ids": [
-        "as_13679468780"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-allow-booking-of-one-way-and-multi-city-flights-on-ipad-app-not-just-round",
-      "gravity_score": 7.1,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Ensure boarding pass displays correctly and reliably instead of failing to load despite app showing itinerary",
-      "category": "Bug Fix",
-      "summary": "The app shows flight itinerary but fails to display the boarding pass button or the pass loads but never displays. Users are sent to airport counters for paper boarding passes, missing the point of a mobile boarding pass.",
-      "post_ids": [
-        "as_13653226959"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-ensure-boarding-pass-displays-correctly-and-reliably-instead-of-failing-to",
-      "gravity_score": 7.1,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix app redirecting to browser for login and support tasks when already authenticated in app",
-      "category": "Bug Fix",
-      "summary": "Users are constantly redirected to Chrome browser for tasks like in-flight WiFi login, chat support, and other functions despite being logged in to the app. This breaks the app experience and creates confusing multiple sign-in flows.",
-      "post_ids": [
-        "as_13701210911"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-app-redirecting-to-browser-for-login-and-support-tasks-when-already-au",
-      "gravity_score": 7.0
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix Apple Watch app that hasn't synced properly in years despite multiple restores and reinstalls",
-      "category": "Bug Fix",
-      "summary": "The Apple Watch Delta app never syncs with the iPhone app and always tells users to open the iPhone app, which doesn't help. This has been broken across multiple watch models for years. The smartwatch is a natural platform for boarding passes.",
-      "post_ids": [
-        "as_13677545929"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-apple-watch-app-that-hasn-t-synced-properly-in-years-despite-multiple-",
-      "gravity_score": 7.0
-    },
-    {
-      "subject": "Delta",
-      "action": "Fix bag tracking and baggage check functionality that doesn't complete or show status",
-      "category": "Bug Fix",
-      "summary": "Bag check feature creates a loop that never completes, and baggage tracking info doesn't display in the app. Users can't track luggage status or complete baggage operations through the app.",
-      "post_ids": [
-        "as_13614161075"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-fix-bag-tracking-and-baggage-check-functionality-that-doesn-t-complete-or-",
-      "gravity_score": 6.6,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Improve passenger name matching and profile handling for group bookings and shared accounts",
-      "category": "Bug Fix",
-      "summary": "When father purchases ticket for daughter with her name, the app incorrectly associates it with the purchaser's profile. The app also has issues with companion passengers and recognizing different travelers on the same account.",
-      "post_ids": [
-        "as_13566454211"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-improve-passenger-name-matching-and-profile-handling-for-group-bookings-an",
-      "gravity_score": 6.5
-    },
-    {
-      "subject": "Delta",
-      "action": "Add dark mode setting to the app interface",
-      "category": "Feature Request",
-      "summary": "Users request dark mode option for reduced eye strain, especially at night or during travel. This is a standard feature in modern apps that Delta lacks.",
-      "post_ids": [
-        "as_13591186763"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-add-dark-mode-setting-to-the-app-interface",
-      "gravity_score": 6.1,
-      "trends_boost": 1.01
-    },
-    {
-      "subject": "Delta",
-      "action": "Allow offline access to flight details and boarding passes without requiring internet connection",
-      "category": "Feature Request",
-      "summary": "Users must log in every time they open the app and cannot access flight information or boarding passes without internet, which is problematic during travel. Competitors allow offline access to stored flight data.",
-      "post_ids": [
-        "as_13717160235"
-      ],
-      "source_subreddit": "appstore",
-      "slug": "delta-allow-offline-access-to-flight-details-and-boarding-passes-without-requiri",
-      "gravity_score": 6.0
-    }
-  ],
+  "requests_found": 0,
+  "leaderboard": [],
   "post_lookup": {
     "as_13838796072": {
       "title": "Buggy",
@@ -27803,17 +27292,6 @@
       "_rating": 2,
       "selftext": "The service was outstanding. the drinks were great, however, your entertainment free is difficult to do on an Android and I never got to use it. plus no earbuds and I have to tell you Delta provided earbuds and a TV even on their smaller plane, so that was a little bit of a disappointment. it would "
     },
-    "gp_9a00a4e1-f388-466b-8064-c799784e5c32": {
-      "title": "i just got a notification of a delayed flight which would ca\u2026",
-      "score": 10,
-      "created_utc": 1717628168.0,
-      "permalink": "https://play.google.com/store/apps/details?id=com.aa.android",
-      "top_comments": [],
-      "_source": "googleplay",
-      "_subreddit": "googleplay",
-      "_rating": 3,
-      "selftext": "i just got a notification of a delayed flight which would cause me to miss my connection. it was very confusing to attempt to reschedule the connection. the chat bot needs a confirmation code, which isn't obvious in my flight info, and was of no help rescheduling. when i finally got it rescheduled, "
-    },
     "gp_bd6abddc-bead-4625-9595-9f232a562ffd": {
       "title": "The app indicates that it will let me update my address, ktn\u2026",
       "score": 20,
@@ -33599,6 +33077,17 @@
       "_subreddit": "googleplay",
       "_rating": 1,
       "selftext": "1) App conflicts with emails on flight schedule changes. App should be updated as same time email notification goes out to avoid confusion and conflicting information. 2) App does not show flight class status or chsnges to. IE A-F etc. which translates to boarding order with A being the first after "
+    },
+    "gp_2a010eb5-5a8a-43e4-9e5e-5d508383aaaa": {
+      "title": "App that does not put the customer first. The app doesn't st\u2026",
+      "score": 30,
+      "created_utc": 1716869222.0,
+      "permalink": "https://play.google.com/store/apps/details?id=com.southwestairlines.mobile",
+      "top_comments": [],
+      "_source": "googleplay",
+      "_subreddit": "googleplay",
+      "_rating": 1,
+      "selftext": "App that does not put the customer first. The app doesn't stay logged in and it is very difficult to find the most common tasks like checkin. My flight already attached to my rewards number should be easily found when logged in, no confirmation number should be required."
     },
     "gp_fa2729fb-ea43-4375-a57f-aef0f8bd8dc4": {
       "title": "As many people have mentioned the account button doesn't wor\u2026",
@@ -40552,6 +40041,17 @@
       "_rating": 1,
       "selftext": "I regret having booked my flight from San Francisco to Honolulu with United Airlines. I paid $3,247.43 for a 1st class seat, hoping I would have a comfortable flight. But I was so disappointed when our flight was delayed for 10hrs and all they can say was the aircraft hasn't arrived yet. No food or "
     },
+    "tp_69b4def6d3db9de3ebbbfece": {
+      "title": "Staff was extremely rude",
+      "score": 30,
+      "created_utc": 1773468439.0,
+      "permalink": "https://www.trustpilot.com/review/aa.com",
+      "top_comments": [],
+      "_source": "trustpilot",
+      "_subreddit": "trustpilot",
+      "_rating": 1,
+      "selftext": "Staff was extremely rude. Lots of unnecessary yelling!! Did not help in any way."
+    },
     "tp_69b43c51ad322d6526035bff": {
       "title": "We payed for a flight from South Bend\u2026",
       "score": 30,
@@ -42300,17 +41800,6 @@
       "_subreddit": "trustpilot",
       "_rating": 3,
       "selftext": "On time and safe , but very very squashed seats "
-    },
-    "tp_69546fdaf72d76c54c8b33a0": {
-      "title": "This airline is horrible ",
-      "score": 30,
-      "created_utc": 1767148538.0,
-      "permalink": "https://www.trustpilot.com/review/aa.com",
-      "top_comments": [],
-      "_source": "trustpilot",
-      "_subreddit": "trustpilot",
-      "_rating": 1,
-      "selftext": "This airline is horrible . We had a flight cancel, they tried to not cancel the next flight so they wouldn\u2019t have to compensate. Over a course of 24 hours we had a delayed flight , then cancelled and then told by the pilot that he didn\u2019t know when the plane would be ready. We then went to a differen"
     },
     "tp_69b4a94770ebc5cf939eb3f9": {
       "title": "Here was my formal complaint",
