@@ -8,6 +8,9 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # opt into Node.js 24 for actions
 
+permissions:
+  contents: write          # allow git-auto-commit to push results
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -36,6 +39,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "data: update scrape results [skip ci]"
-          file_pattern: requester_results.json
+          file_pattern: requester_results.json requester_history.json
           commit_user_name: "Requester Bot"
           commit_user_email: "bot@requester.org"

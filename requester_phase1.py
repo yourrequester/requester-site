@@ -1175,6 +1175,29 @@ def run():
     with open("requester_results.json", "w") as f:
         json.dump(output, f, indent=2)
 
+    # ── Append history snapshot (compact: slug → gravity score) ────────────
+    history_file = "requester_history.json"
+    try:
+        with open(history_file, "r") as f:
+            history = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        history = {"snapshots": []}
+
+    snapshot = {
+        "ts": output["scraped_at"],
+        "scores": {
+            d.get("slug", _make_demand_slug(d.get("subject",""), d.get("action",""))):
+                round(d.get("gravity_score", 0), 1)
+            for d in demands[:200]
+        }
+    }
+    history["snapshots"].append(snapshot)
+    # Keep last 60 snapshots (~15 days at 6-hour intervals)
+    history["snapshots"] = history["snapshots"][-60:]
+    with open(history_file, "w") as f:
+        json.dump(history, f)
+    print(f"  📊 History: {len(history['snapshots'])} snapshots saved")
+
     try:
         run_id = requester_db.save_run(output)
         print(f"\n\n  ✅ Saved to requester_results.json + requester.db (run #{run_id})")
