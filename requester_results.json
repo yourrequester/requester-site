@@ -46,7 +46,7 @@
     "Southwest Airlines boarding issues",
     "best airline app features missing"
   ],
-  "scraped_at": "2026-03-14T02:00:39.926178+00:00",
+  "scraped_at": "2026-03-14T02:47:42.261341+00:00",
   "posts_scanned": 0,
   "appstore_reviews": 1507,
   "googleplay_reviews": 1884,
@@ -37324,17 +37324,6 @@
       "_rating": 3,
       "selftext": "the Account section doesn't load when I tap on it. otherwise it's a good app for traveling with Alaska Airlines"
     },
-    "gp_6b8b1554-6fa8-460c-ae8c-678016047f2c": {
-      "title": "this Android app used to work but now it becomes unresponsiv\u2026",
-      "score": 20,
-      "created_utc": 1761136519.0,
-      "permalink": "https://play.google.com/store/apps/details?id=com.alaskaairlines.android",
-      "top_comments": [],
-      "_source": "googleplay",
-      "_subreddit": "googleplay",
-      "_rating": 2,
-      "selftext": "this Android app used to work but now it becomes unresponsive if I try to go to My Account.... quite annoying."
-    },
     "gp_7352cb7f-c474-4d60-8861-cd6d48a94308": {
       "title": "I tried to add bags, but there was no option, so I pressed c\u2026",
       "score": 30,
@@ -37356,6 +37345,17 @@
       "_subreddit": "googleplay",
       "_rating": 1,
       "selftext": "It literally doesn't work. \"We'll be just a moment\" sits there spinning for ever. Horrible app update"
+    },
+    "gp_5b7ab70b-2d54-49dc-b9b9-d9aa572318a2": {
+      "title": "No longer functions, cannot log in or get trip info/boarding\u2026",
+      "score": 30,
+      "created_utc": 1762982572.0,
+      "permalink": "https://play.google.com/store/apps/details?id=com.alaskaairlines.android",
+      "top_comments": [],
+      "_source": "googleplay",
+      "_subreddit": "googleplay",
+      "_rating": 1,
+      "selftext": "No longer functions, cannot log in or get trip info/boarding pass, no support/info from Alaska."
     },
     "tp_69b4360f07f7ef18b36cc169": {
       "title": "TERRIBLE SERVICE",
@@ -41801,6 +41801,17 @@
       "_rating": 1,
       "selftext": "This airline is horrible . We had a flight cancel, they tried to not cancel the next flight so they wouldn\u2019t have to compensate. Over a course of 24 hours we had a delayed flight , then cancelled and then told by the pilot that he didn\u2019t know when the plane would be ready. We then went to a differen"
     },
+    "tp_69b4a94770ebc5cf939eb3f9": {
+      "title": "Here was my formal complaint",
+      "score": 30,
+      "created_utc": 1773454695.0,
+      "permalink": "https://www.trustpilot.com/review/southwest.com",
+      "top_comments": [],
+      "_source": "trustpilot",
+      "_subreddit": "trustpilot",
+      "_rating": 1,
+      "selftext": "Here was my formal complaint. \n\nI purchased 3 Southwest basic fares for a one way flight on March 20. One of the fees was for my 2 year old grandson. I asked Southwest if they could make sure to have him sit next to me. They said that due to their policy on basic fares they could not guarantee that "
+    },
     "tp_69b0db849211a0fab160e04a": {
       "title": "Expect a long period of serious Problems on Southwest",
       "score": 30,
@@ -41999,16 +42010,16 @@
       "_rating": 1,
       "selftext": "They bankrupted Greyhound with their low fares and inherited the riff-raff. Watching the quality of service decline and preferring to sit among more civil people, was rebooked by another airline on Southwest only to experience the most hostile, rude, insolent customer service personnel at Fort Laude"
     },
-    "tp_699138579a3f961b0c93d264": {
-      "title": "No more love airline",
-      "score": 30,
-      "created_utc": 1771132023.0,
+    "tp_6990b4b1fe89786c79b07dae": {
+      "title": "Southwest is turning into a ripoff",
+      "score": 20,
+      "created_utc": 1771098321.0,
       "permalink": "https://www.trustpilot.com/review/southwest.com",
       "top_comments": [],
       "_source": "trustpilot",
       "_subreddit": "trustpilot",
-      "_rating": 1,
-      "selftext": "Southwest has gone from fun people and an unmatched safety record to child or otherwise unemployable crews and excuses. I have been flying Southwest for the past 26 years using my Chase Southwest card. Now looking at ANYONE else to fly. "
+      "_rating": 2,
+      "selftext": "Absolute ripoff even for using Southwest points or just purchasing flights.  My wife and I may be looking into another airline after seeing how rediculus their flights were.  1200.00 for a flight to and from Witchita with layover and that is for choice plus standard seating sitting together.  That i"
     },
     "tp_6990b0ccc1069ee7020422e6": {
       "title": "Horrible",
@@ -43538,17 +43549,6 @@
       "_subreddit": "trustpilot",
       "_rating": 1,
       "selftext": "we flew for the first time and they ruined my luggage. the lady at the baggage dept told us to scan the bar code but never said you have 4 hrs. go to website big issues so had to have nice lady file for us told us they are good at taken care of this issue. send all the info pictures and receipt. Now"
-    },
-    "tp_66762f46b5929fcd0de258fa": {
-      "title": "This airline is BROKEN",
-      "score": 30,
-      "created_utc": 1719028582.0,
-      "permalink": "https://www.trustpilot.com/review/southwest.com",
-      "top_comments": [],
-      "_source": "trustpilot",
-      "_subreddit": "trustpilot",
-      "_rating": 1,
-      "selftext": "This airline is BROKEN and I hope Elliot Management can turn it around.  Please stop trying with the folksy inflight service attempts and just fix your planes and upgrade your maintenance problems  #lasvegas #5022 #abq"
     },
     "tp_69b44454aad44a5f5e7cb10f": {
       "title": "Their car rental company scammed us",
