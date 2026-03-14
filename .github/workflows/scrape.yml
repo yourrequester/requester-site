@@ -31,10 +31,12 @@ jobs:
 
       - name: Run scraper
         env:
-          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC }}
-          YOUTUBE_API_KEY:    ${{ secrets.YOUTUBE }}
-          SUPABASE_URL:       ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY:  ${{ secrets.SUPABASE_ANON_KEY }}
+          ANTHROPIC_API_KEY:      ${{ secrets.ANTHROPIC }}
+          YOUTUBE_API_KEY:        ${{ secrets.YOUTUBE }}
+          SUPABASE_URL:           ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY:      ${{ secrets.SUPABASE_ANON_KEY }}
+          REDDIT_CLIENT_ID:       ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET:   ${{ secrets.REDDIT_CLIENT_SECRET }}
         run: python requester_phase1.py
 
       - name: Pull latest before committing

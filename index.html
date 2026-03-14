@@ -1136,6 +1136,39 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
   transition: border-color .15s, box-shadow .15s;
 }
 .google-signin-btn:hover { border-color: var(--ink-mid); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+
+/* Sign-in nudge dropdown */
+.signin-nudge {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  background: var(--white);
+  border: 1px solid var(--ink-faint);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  padding: 16px;
+  z-index: 250;
+  animation: fadeIn .2s ease;
+  text-align: center;
+}
+.signin-nudge p {
+  font-size: 13px;
+  color: var(--ink-mid);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.signin-nudge .google-signin-btn {
+  margin: 0 auto;
+  justify-content: center;
+}
+.signin-nudge-close {
+  position: absolute;
+  top: 8px; right: 10px;
+  background: none; border: none;
+  font-size: 16px; color: var(--ink-light);
+  cursor: pointer; line-height: 1;
+}
 .shared-banner {
   background: var(--accent); color: #fff; text-align: center;
   padding: 10px 20px; font-size: 13px; font-weight: 500;
@@ -1261,13 +1294,22 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
         </div>
         <div class="about-popover-section">
           <div class="about-popover-label">Contact</div>
-          <div class="about-popover-body">Interested in a custom dashboard or integration? <button class="about-email-reveal" onclick="document.getElementById('about-email').style.display='inline'">Show contact</button><span id="about-email" style="display:none;"> hello@requester.org</span></div>
+          <div class="about-popover-body">Want to get in touch? <button class="about-email-reveal" onclick="document.getElementById('about-email').style.display='inline'">Show contact</button><span id="about-email" style="display:none;"> YourRequester@gmail.com</span></div>
         </div>
       </div>
     </div>
     <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
     <!-- Auth area -->
-    <div class="auth-area" id="auth-area">
+    <div class="auth-area" id="auth-area" style="position:relative;">
+      <!-- Sign-in nudge (shown when unauthenticated user tries to vote) -->
+      <div id="signin-nudge" class="signin-nudge" style="display:none;">
+        <button class="signin-nudge-close" onclick="closeSigninNudge()">&times;</button>
+        <p>Sign in to upvote requests and help surface what matters most.</p>
+        <button class="google-signin-btn" onclick="triggerSignIn()">
+          <svg width="16" height="16" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Sign in with Google
+        </button>
+      </div>
       <button id="google-signin-btn" class="google-signin-btn" onclick="triggerSignIn()">
         <svg width="16" height="16" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Sign in with Google
@@ -1577,14 +1619,39 @@ function _applySession(session) {
 
 function triggerSignIn() {
   if (!_sb) { showToast('Auth not configured — add Supabase keys'); return; }
+  closeSigninNudge();
   _sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: 'https://requester.org/requester_dashboard.html' },
+    options: { redirectTo: 'https://requester.org/' },
   });
 }
 
 function signOut() {
   if (_sb) _sb.auth.signOut();
+}
+
+let _nudgeTimer = null;
+function _showSigninNudge() {
+  const el = document.getElementById('signin-nudge');
+  if (!el) return;
+  el.style.display = 'block';
+  // Close when clicking anywhere outside
+  if (_nudgeTimer) clearTimeout(_nudgeTimer);
+  setTimeout(() => {
+    document.addEventListener('click', _nudgeOutsideClick, { once: true });
+  }, 100);
+  // Auto-dismiss after 8s
+  _nudgeTimer = setTimeout(closeSigninNudge, 8000);
+}
+function closeSigninNudge() {
+  const el = document.getElementById('signin-nudge');
+  if (el) el.style.display = 'none';
+  if (_nudgeTimer) { clearTimeout(_nudgeTimer); _nudgeTimer = null; }
+  document.removeEventListener('click', _nudgeOutsideClick);
+}
+function _nudgeOutsideClick(e) {
+  const el = document.getElementById('signin-nudge');
+  if (el && !el.contains(e.target)) closeSigninNudge();
 }
 
 function updateAuthUI() {
@@ -1645,8 +1712,7 @@ async function toggleVote(slug, event, btnEl) {
   if (!slug) { showToast('Cannot vote on this item'); return; }
   if (!currentUser) {
     _pendingVoteSlug = slug;
-    showToast('Sign in with Google to upvote');
-    triggerSignIn();
+    _showSigninNudge();
     return;
   }
   _doVote(slug, btnEl);
@@ -1891,8 +1957,7 @@ async function submitTopicRequest() {
 async function toggleTopicVote(topicId, btnEl) {
   if (!_sb) return;
   if (!currentUser) {
-    showToast('Sign in with Google to vote');
-    triggerSignIn();
+    _showSigninNudge();
     return;
   }
 
@@ -2903,9 +2968,9 @@ async function saveSettings() {
     <!-- Contact -->
     <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">Contact</div>
-      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">Built for product teams.</h3>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">Want to get in touch with us?</h3>
       <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Interested in a custom dashboard, different industry, or integration?</p>
-      <button id="reveal-contact-btn" onclick="this.style.display='none';document.getElementById('contact-revealed').style.display='block';" style="margin-top:16px;padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.02em;">Show contact info</button>
+      <button id="reveal-contact-btn" onclick="this.style.display='none';document.getElementById('contact-revealed').style.display='block';" style="margin-top:16px;padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.02em;">Show contact</button>
       <div id="contact-revealed" style="display:none;margin-top:16px;font-size:14px;color:var(--ink);">
         <a href="mailto:YourRequester@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:600;">YourRequester@gmail.com</a>
       </div>

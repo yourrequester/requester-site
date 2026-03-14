@@ -130,24 +130,121 @@ INTENT_KEYWORDS = [
 ]
 
 HEADERS = {
-    # Browser-style UA avoids Reddit's bot-blocker on GitHub Actions IPs
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9",
+    "User-Agent": "Requester/2.0 by /u/RequesterBot (requester.org)",
+    "Accept": "application/json",
 }
+
+# ── Reddit OAuth ──────────────────────────────────────────────────────────────
+# GitHub Actions IPs are blocked by Reddit's public JSON endpoint (403).
+# The official OAuth API (oauth.reddit.com) works reliably from any IP.
+#
+# To set up:
+#   1. Go to https://www.reddit.com/prefs/apps
+#   2. Click "create another app..." at the bottom
+#   3. Name: Requester  |  Type: "script"
+#   4. Redirect URI: http://localhost:8080 (not used, required field)
+#   5. Copy the client ID (under app name) and secret
+#   6. Add as GitHub secrets: REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET
+#
+# If no credentials are set, falls back to public JSON (works locally,
+# fails on GitHub Actions).
+
+REDDIT_CLIENT_ID     = os.environ.get("REDDIT_CLIENT_ID", "")
+REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET", "")
+REDDIT_USERNAME      = os.environ.get("REDDIT_USERNAME", "")
+REDDIT_PASSWORD      = os.environ.get("REDDIT_PASSWORD", "")
+
+_reddit_token = None
+_reddit_token_expiry = 0
+_REDDIT_BASE = "https://oauth.reddit.com"
+
+
+def _get_reddit_token():
+    """Obtain an OAuth2 bearer token using script-app credentials."""
+    global _reddit_token, _reddit_token_expiry
+
+    if _reddit_token and time.time() < _reddit_token_expiry - 60:
+        return _reddit_token
+
+    if not REDDIT_CLIENT_ID or not REDDIT_CLIENT_SECRET:
+        return None
+
+    try:
+        auth = (REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET)
+        ua   = HEADERS["User-Agent"]
+
+        # Try password grant first (script app with username/password)
+        if REDDIT_USERNAME and REDDIT_PASSWORD:
+            resp = requests.post(
+                "https://www.reddit.com/api/v1/access_token",
+                auth=auth,
+                headers={"User-Agent": ua},
+                data={
+                    "grant_type": "password",
+                    "username": REDDIT_USERNAME,
+                    "password": REDDIT_PASSWORD,
+                },
+                timeout=15,
+            )
+        else:
+            # Client-credentials grant (app-only, read-only)
+            resp = requests.post(
+                "https://www.reddit.com/api/v1/access_token",
+                auth=auth,
+                headers={"User-Agent": ua},
+                data={
+                    "grant_type": "client_credentials",
+                },
+                timeout=15,
+            )
+
+        resp.raise_for_status()
+        data = resp.json()
+        _reddit_token = data["access_token"]
+        _reddit_token_expiry = time.time() + data.get("expires_in", 3600)
+        print(f"  🔑 Reddit OAuth token obtained (expires in {data.get('expires_in', '?')}s)")
+        return _reddit_token
+    except Exception as e:
+        print(f"  ⚠  Reddit OAuth failed: {e}")
+        return None
+
+
+def _reddit_get(url, params=None, timeout=20):
+    """Make a Reddit API request, preferring OAuth, falling back to public JSON."""
+    token = _get_reddit_token()
+
+    if token:
+        # Use OAuth endpoint
+        oauth_url = url.replace("https://www.reddit.com", _REDDIT_BASE)
+        headers = {
+            "User-Agent": HEADERS["User-Agent"],
+            "Authorization": f"Bearer {token}",
+        }
+        resp = requests.get(oauth_url, headers=headers, params=params, timeout=timeout)
+        if resp.status_code == 401:
+            # Token expired — clear and retry once
+            global _reddit_token
+            _reddit_token = None
+            token = _get_reddit_token()
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+                resp = requests.get(oauth_url, headers=headers, params=params, timeout=timeout)
+        return resp
+    else:
+        # No OAuth — try public endpoint (works locally, 403 on Actions)
+        return requests.get(url, headers=HEADERS, params=params, timeout=timeout)
+
 
 _REDDIT_DELAYS = [2, 5, 10]  # back-off seconds between retries
 
 
 def fetch_posts(subreddit, sort, limit):
-    url = f"https://www.reddit.com/r/{subreddit}/{sort}.json?limit={limit}&raw_json=1"
+    url = f"https://www.reddit.com/r/{subreddit}/{sort}.json"
+    params = {"limit": limit, "raw_json": 1}
+
     for attempt, delay in enumerate(_REDDIT_DELAYS + [None], start=1):
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=20)
+            resp = _reddit_get(url, params=params, timeout=20)
             if resp.status_code == 429:
                 wait = int(resp.headers.get("Retry-After", delay or 30))
                 print(f"  ⏳ Rate-limited r/{subreddit}/{sort} — waiting {wait}s")
@@ -167,10 +264,11 @@ def fetch_posts(subreddit, sort, limit):
 
 
 def fetch_post_with_comments(subreddit, post_id):
-    url = f"https://www.reddit.com/r/{subreddit}/comments/{post_id}.json?limit={MAX_COMMENTS}&depth=1&sort=top"
+    url = f"https://www.reddit.com/r/{subreddit}/comments/{post_id}.json"
+    params = {"limit": MAX_COMMENTS, "depth": 1, "sort": "top"}
     try:
         time.sleep(COMMENT_DELAY)
-        resp = requests.get(url, headers=HEADERS, timeout=15)
+        resp = _reddit_get(url, params=params, timeout=15)
         resp.raise_for_status()
         data = resp.json()
         post_data = data[0]["data"]["children"][0]["data"]
