@@ -467,6 +467,15 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes confetti-fly {
+  0%   { transform: translate(0,0) scale(1) rotate(0deg); opacity:1; }
+  100% { transform: translate(var(--tx),var(--ty)) scale(0.15) rotate(var(--rot)); opacity:0; }
+}
+@keyframes vote-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.32); }
+  100% { transform: scale(1); }
+}
 
 .card-top {
   display: flex;
@@ -1374,14 +1383,18 @@ function updateAuthUI() {
 
 async function loadVoteCounts() {
   if (!_sb || !allRequests.length) return;
-  const slugs = allRequests.map(d => d.slug).filter(Boolean);
+
+  // Use client-side slug as fallback so every demand gets a stable key
+  const slugs = allRequests.map(d => d.slug || _clientSlug(d.subject, d.action)).filter(Boolean);
   if (!slugs.length) return;
 
-  // Fetch all votes for these slugs in one query
-  const { data: rows } = await _sb.from('votes').select('demand_slug, user_id').in('demand_slug', slugs);
+  // Public SELECT — reads all votes regardless of auth state.
+  // (Requires Supabase RLS policy: FOR SELECT USING (true))
+  const { data: rows } = await _sb.from('votes')
+      .select('demand_slug, user_id').in('demand_slug', slugs);
   if (!rows) return;
 
-  const counts = {};
+  const counts    = {};
   const userVotes = new Set();
   rows.forEach(r => {
     counts[r.demand_slug] = (counts[r.demand_slug] || 0) + 1;
@@ -1389,10 +1402,9 @@ async function loadVoteCounts() {
   });
 
   allRequests.forEach(d => {
-    if (d.slug) {
-      d.vote_count  = counts[d.slug]        || 0;
-      d.user_voted  = userVotes.has(d.slug) || false;
-    }
+    const slug = d.slug || _clientSlug(d.subject, d.action);
+    d.vote_count = counts[slug] || 0;
+    d.user_voted = userVotes.has(slug) || false;
   });
   render();
 }
@@ -1421,51 +1433,100 @@ async function _doVote(slug, btnEl) {
   const allBtns = [...document.querySelectorAll(`[data-slug="${slug}"]`)];
   if (btnEl && !allBtns.includes(btnEl)) allBtns.push(btnEl);
 
-  // Optimistic UI
-  const isVoted  = allBtns.some(b => b.classList.contains('voted'));
+  // Use demand object as truth source (not button class) to prevent double-fire bugs
+  const demand   = allRequests.find(d => (d.slug || _clientSlug(d.subject, d.action)) === slug);
+  const isVoted  = demand ? demand.user_voted : allBtns.some(b => b.classList.contains('voted'));
   const newVoted = !isVoted;
+
+  // Optimistic UI + pop animation
   allBtns.forEach(b => {
     b.classList.toggle('voted', newVoted);
-    const countEl = b.querySelector('.vote-count') || document.getElementById('detail-vote-count');
+    b.style.animation = 'none';
+    requestAnimationFrame(() => { b.style.animation = 'vote-pop 0.3s ease'; });
+    const countEl = b.querySelector('.vote-count');
     if (countEl) {
       const cur = parseInt(countEl.textContent) || 0;
       countEl.textContent = newVoted ? cur + 1 : Math.max(0, cur - 1);
     }
   });
+  // Update detail panel count
+  const detailCount = document.getElementById('detail-vote-count');
+  if (detailCount) {
+    const cur = parseInt(detailCount.textContent) || 0;
+    detailCount.textContent = newVoted ? cur + 1 : Math.max(0, cur - 1);
+  }
+
+  // Confetti on upvote
+  if (newVoted && btnEl) _launchConfetti(btnEl);
 
   try {
     let error;
     if (newVoted) {
-      ({ error } = await _sb.from('votes').insert({ demand_slug: slug, user_id: currentUser.id }));
+      // upsert instead of insert — silently wins if row already exists (no duplicate key error)
+      ({ error } = await _sb.from('votes').upsert(
+        { demand_slug: slug, user_id: currentUser.id },
+        { onConflict: 'demand_slug,user_id', ignoreDuplicates: true }
+      ));
     } else {
       ({ error } = await _sb.from('votes').delete()
           .eq('demand_slug', slug).eq('user_id', currentUser.id));
     }
     if (error) throw new Error(error.message);
 
-    // Fetch real count
+    // Sync real count from DB
     const { count } = await _sb.from('votes')
         .select('*', { count: 'exact', head: true }).eq('demand_slug', slug);
     const realCount = count || 0;
     allBtns.forEach(b => {
-      const countEl = b.querySelector('.vote-count');
-      if (countEl) countEl.textContent = realCount;
+      const ce = b.querySelector('.vote-count');
+      if (ce) ce.textContent = realCount;
     });
-    const detailCount = document.getElementById('detail-vote-count');
     if (detailCount) detailCount.textContent = realCount;
-    const demand = allRequests.find(d => d.slug === slug);
     if (demand) { demand.user_voted = newVoted; demand.vote_count = realCount; }
+
   } catch(e) {
-    // Revert
+    // Revert optimistic UI
     allBtns.forEach(b => {
       b.classList.toggle('voted', isVoted);
-      const countEl = b.querySelector('.vote-count');
-      if (countEl) {
-        const cur = parseInt(countEl.textContent) || 0;
-        countEl.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
+      const ce = b.querySelector('.vote-count');
+      if (ce) {
+        const cur = parseInt(ce.textContent) || 0;
+        ce.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
       }
     });
+    if (detailCount) {
+      const cur = parseInt(detailCount.textContent) || 0;
+      detailCount.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
+    }
     showToast('Vote failed: ' + e.message);
+  }
+}
+
+// ── Confetti burst ─────────────────────────────────────────
+function _launchConfetti(btnEl) {
+  const rect   = btnEl.getBoundingClientRect();
+  const cx     = rect.left + rect.width  / 2;
+  const cy     = rect.top  + rect.height / 2;
+  const colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#e67e22','#1abc9c'];
+  const shapes = ['50%','3px','0'];  // circle, rect, triangle-ish
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    const angle  = (Math.PI * 2 * i / 14) + (Math.random() - 0.5) * 0.6;
+    const dist   = 42 + Math.random() * 48;
+    const size   = 6 + Math.random() * 5;
+    el.style.cssText = `
+      position:fixed; left:${cx}px; top:${cy}px;
+      width:${size}px; height:${size}px;
+      border-radius:${shapes[i % shapes.length]};
+      background:${colors[i % colors.length]};
+      pointer-events:none; z-index:9999;
+      --tx:${(Math.cos(angle)*dist).toFixed(1)}px;
+      --ty:${(Math.sin(angle)*dist - 30).toFixed(1)}px;
+      --rot:${Math.round(Math.random()*360)}deg;
+      animation:confetti-fly 0.65s ease-out forwards;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 700);
   }
 }
 
