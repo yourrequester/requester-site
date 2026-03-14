@@ -6,7 +6,7 @@
     "netflix", "spotify", "DisneyPlus",
     "doordash", "UberEATS", "uber", "lyft",
     "Chase", "paypal", "CashApp", "venmo",
-    "amazon", "Instagram", "tiktok_us",
+    "amazon", "eBay", "CoinBase", "ethereum",
     "personalfinance"
   ],
   "sort_modes": ["hot", "top", "new", "controversial"],
@@ -31,7 +31,8 @@
     { "name": "Cash App",   "app_id": "711923939" },
     { "name": "Venmo",      "app_id": "351727428" },
     { "name": "Amazon",     "app_id": "297606951" },
-    { "name": "Instagram",  "app_id": "389801252" }
+    { "name": "eBay",       "app_id": "282614216" },
+    { "name": "Coinbase",   "app_id": "886427730" }
   ],
   "appstore_pages": 6,
   "appstore_min_rating": 3,
@@ -53,7 +54,8 @@
     { "name": "Cash App",   "app_id": "com.squareup.cash" },
     { "name": "Venmo",      "app_id": "com.venmo" },
     { "name": "Amazon",     "app_id": "com.amazon.mShop.android.shopping" },
-    { "name": "Instagram",  "app_id": "com.instagram.android" }
+    { "name": "eBay",       "app_id": "com.ebay.mobile" },
+    { "name": "Coinbase",   "app_id": "com.coinbase.android" }
   ],
   "googleplay_count": 150,
   "googleplay_max_rating": 3,
@@ -74,7 +76,8 @@
     { "name": "PayPal",     "slug": "paypal.com" },
     { "name": "Cash App",   "slug": "cash.app" },
     { "name": "Amazon",     "slug": "amazon.com" },
-    { "name": "Instagram",  "slug": "instagram.com" }
+    { "name": "eBay",       "slug": "ebay.com" },
+    { "name": "Coinbase",   "slug": "coinbase.com" }
   ],
   "trustpilot_pages": 4,
   "trustpilot_max_rating": 3,
@@ -90,8 +93,9 @@
     "Chase bank app problems",
     "PayPal app issues feature request",
     "Cash App complaints 2025",
-    "Amazon app feature request",
-    "Instagram feature request 2025"
+    "Amazon app feature request 2025",
+    "eBay app complaints feature request",
+    "Coinbase app problems complaints 2025"
   ],
   "youtube_max_results": 150,
   "google_trends_boost": true

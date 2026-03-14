@@ -726,8 +726,11 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
 .trend-empty { font-size: 12px; color: var(--ink-light); font-style: italic; padding: 8px 0; }
 
 /* ── Platform icons ── */
-.platform-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 12px; color: var(--ink-mid); }
+.platform-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 12px; color: var(--ink-mid); transition: background .15s; border-radius: 4px; }
 .platform-row + .platform-row { border-top: 1px solid var(--ink-faint); }
+.platform-row:hover { background: var(--ink-faint); color: var(--ink); }
+.platform-row.active { background: var(--accent); color: #fff; }
+.platform-row.active .platform-count { color: #fff; }
 .platform-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .platform-count { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--ink); font-family: 'SF Mono','Consolas',monospace; }
 
@@ -1245,7 +1248,7 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
   </div>
   <!-- Source filter row — populated dynamically -->
   <div class="source-filter-row" id="source-filter-row" style="display:none;margin-bottom:16px;gap:8px;flex-wrap:wrap;align-items:center;">
-    <span style="font-size:11px;color:var(--ink-light);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;">Company</span>
+    <span style="font-size:11px;color:var(--ink-light);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;">Industry</span>
     <div id="source-pills" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
   </div>
 
@@ -1423,7 +1426,19 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
 <script>
 let allRequests = [], postLookup = {}, currentData = {};
 let activeFilter = 'all', activeSearch = '', selectedId = -1;
-let activeSources = new Set();
+let activeSources = new Set(); // legacy — kept for resetHome compat
+let activeIndustry = '';
+let activePlatforms = new Set();
+
+// Maps every canonical subject name → its industry label
+const COMPANY_TO_INDUSTRY = {
+  'Delta':'Airlines','United':'Airlines','American':'Airlines','Southwest':'Airlines','Alaska':'Airlines',
+  'Netflix':'Streaming','Spotify':'Streaming','Disney+':'Streaming',
+  'DoorDash':'Food & Ride','Uber Eats':'Food & Ride','Uber':'Food & Ride','Lyft':'Food & Ride',
+  'Chase':'Finance','PayPal':'Finance','Cash App':'Finance','Venmo':'Finance','Coinbase':'Finance',
+  'Amazon':'Online Marketplace','eBay':'Online Marketplace',
+  'Coinbase':'Finance',
+};
 let historyData = null; // { snapshots: [ { ts, scores: { slug: score } } ] }
 
 // Generate a stable slug from subject + action (mirrors Python _make_demand_slug)
@@ -2028,70 +2043,23 @@ function ingestData(data) {
 
   // (status indicators removed — data always shown)
 
-  // Hero
-  const subs = (data.subreddits || (data.subreddit ? [data.subreddit] : [])).map(s => s.replace(/^\/?r\//i,''));
-  const apps     = data.appstore_apps    || [];
-  const gpapps   = data.googleplay_apps  || [];
-  const tpcos  = data.trustpilot_companies || [];
-  const steam  = data.steam_apps    || [];
-  const ytq    = data.youtube_searches || [];
-  const allSources = [
-    ...subs.map(s=>`r/${s}`),
-    ...apps.map(a=>`${a} App Store`),
-    ...gpapps.map(a=>`${a} Google Play`),
-    ...(tpcos.length ? ['Trustpilot'] : []),
-    ...(steam.length ? ['Steam'] : []),
-    ...(ytq.length   ? ['YouTube']   : []),
-  ];
-
-  // Smart hero: figure out if there's a unifying subject
-  // Check if all companies tagged point to the same entity
-  const companies = [...new Set(allRequests.map(r => r.subject).filter(Boolean))];
-  const appNames = apps.map(a => a.toLowerCase());
-  const subNames = subs.map(s => s.toLowerCase());
-
-  // Detect if sources are thematically unified around one company
-  const singleCompany = apps.length === 1 && subs.every(s =>
-    s.toLowerCase().includes(apps[0].toLowerCase()) ||
-    apps[0].toLowerCase().includes(s.toLowerCase())
-  );
-
-  // Build hero title
-  let heroTitle;
-  if (singleCompany) {
-    heroTitle = `What people are requesting from ${apps[0]}`;
-  } else if (allSources.length === 1) {
-    heroTitle = `What ${allSources[0]} is requesting`;
-  } else if (allSources.length <= 3) {
-    // Show all if they fit — user's screen is wide enough for 3
-    const sourceStr = allSources.slice(0,-1).join(', ') + ' & ' + allSources.slice(-1);
-    heroTitle = `Top requests from ${sourceStr}`;
-  } else {
-    // Too many to list — find a unifying theme or use generic
-    const uniqueCompanies = [...new Set(allRequests.map(r=>r.subject).filter(Boolean))];
-    if (uniqueCompanies.length === 1) {
-      heroTitle = `What people are requesting from ${uniqueCompanies[0]}`;
-    } else if (uniqueCompanies.length <= 3) {
-      heroTitle = `Top requests from ${uniqueCompanies.join(', ')}`;
-    } else {
-      heroTitle = `What the internet is requesting`;
-    }
-  }
-
+  // Hero — always use clean static title
+  const heroTitle = 'What the internet is requesting';
   document.getElementById('hero-title').textContent = heroTitle;
   _defaultHeroTitle = heroTitle;
 
-  // Hero subtitle — compact summary of platforms
+  // Hero subtitle — count how many platforms are active
   const heroSub = document.getElementById('hero-sub');
-  const platformNames = [];
-  if (subs.length) platformNames.push('Reddit');
-  if (apps.length) platformNames.push('App Store');
-  if (gpapps.length) platformNames.push('Google Play');
-  if (tpcos.length) platformNames.push('Trustpilot');
-  if (steam.length) platformNames.push('Steam');
-  if (ytq.length) platformNames.push('YouTube');
-  heroSub.textContent = platformNames.length ? 'Tracking ' + platformNames.join(' · ') : '';
-  heroSub.style.display = platformNames.length ? '' : 'none';
+  const subs   = (data.subreddits || []);
+  const apps   = data.appstore_apps    || [];
+  const gpapps = data.googleplay_apps  || [];
+  const tpcos  = data.trustpilot_companies || [];
+  const steam  = data.steam_apps    || [];
+  const ytq    = data.youtube_searches || [];
+  const platformCount = [subs.length, apps.length, gpapps.length, tpcos.length, steam.length, ytq.length].filter(n=>n>0).length;
+  const totalCount = allRequests.length;
+  heroSub.textContent = totalCount ? `${totalCount.toLocaleString()} requests across ${platformCount} source${platformCount!==1?'s':''}` : '';
+  heroSub.style.display = totalCount ? '' : 'none';
 
   // Hero stats — requests + products only (no posts scanned)
   const companyCount = new Set(allRequests.map(d=>d.subject)).size;
@@ -2125,9 +2093,9 @@ const PLATFORM_ICONS = {
 
 function buildPlatformWidget(data) {
   const sourceCounts = {
+    reddit:     (data.posts_scanned      || 0),
     appstore:   (data.appstore_reviews   || 0),
     googleplay: (data.googleplay_reviews || 0),
-    reddit:     (data.posts_scanned      || 0),
     trustpilot: (data.trustpilot_reviews || 0),
     youtube:    (data.youtube_comments   || 0),
     steam:      (data.steam_reviews      || 0),
@@ -2139,7 +2107,8 @@ function buildPlatformWidget(data) {
   const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
   const html = rows.map(([key, n]) => {
     const p = PLATFORM_ICONS[key];
-    return `<div class="platform-row">
+    const isActive = activePlatforms.has(key);
+    return `<div class="platform-row${isActive?' active':''}" onclick="togglePlatform('${key}')" style="cursor:pointer;" title="Filter by ${p.label}">
       <div class="platform-icon">${p.svg}</div>
       <span>${p.label}</span>
       <span class="platform-count">${fmt(n)}</span>
@@ -2159,17 +2128,8 @@ const INDUSTRY_MAP = [
 let _defaultHeroTitle = 'What the internet is requesting';
 
 function updateHeroTitle(query) {
-  if (!query || !query.trim()) {
-    document.getElementById('hero-title').textContent = _defaultHeroTitle;
-    return;
-  }
-  const q = query.toLowerCase();
-  const industry = INDUSTRY_MAP.find(i => i.words.some(w => q.includes(w)));
-  if (industry) {
-    document.getElementById('hero-title').textContent = `Top requests from the ${industry.label} industry`;
-  } else {
-    document.getElementById('hero-title').textContent = `Results for "${query.trim()}"`;
-  }
+  // Keep the hero title stable — don't inject search terms or company names into it
+  document.getElementById('hero-title').textContent = _defaultHeroTitle;
 }
 
 function buildCats() {
@@ -2235,42 +2195,39 @@ function _demandSources(d) {
   return s;
 }
 
-function buildSourcePills() {
-  // ── Build canonical company list from config data ──────────────────────────
-  const knownCompanies = new Set([
-    ...(currentData.appstore_apps    || []).map(a => typeof a === 'string' ? a : (a.name||'')),
-    ...(currentData.googleplay_apps  || []).map(a => typeof a === 'string' ? a : (a.name||'')),
-    ...(currentData.trustpilot_companies || []).map(a => typeof a === 'string' ? a : (a.name||'')),
-    ...(currentData.steam_apps       || []).map(a => typeof a === 'string' ? a : (a.name||'')),
-  ].filter(Boolean));
-
-  // ── Count demands per company (subject) ───────────────────────────────────
+function buildIndustryPills() {
+  // Count demands per industry
   const counts = {};
   allRequests.forEach(d => {
-    const subj = d.subject;
-    if (subj) counts[subj] = (counts[subj] || 0) + 1;
+    const ind = COMPANY_TO_INDUSTRY[d.subject] || null;
+    if (ind) counts[ind] = (counts[ind] || 0) + 1;
   });
 
-  // Only show pills for known canonical company names (skip "Airlines" / generic subjects)
-  const companies = Object.keys(counts).filter(s =>
-    counts[s] > 0 && (knownCompanies.size === 0 || knownCompanies.has(s))
-  );
-  if (companies.length <= 1) {
+  const industries = Object.keys(counts).filter(k => counts[k] > 0);
+  if (industries.length <= 1) {
     document.getElementById('source-filter-row').style.display = 'none';
     return;
   }
 
-  // Sort by demand count descending
-  companies.sort((a, b) => counts[b] - counts[a]);
+  // Fixed display order
+  const ORDER = ['Airlines','Streaming','Food & Ride','Finance','Online Marketplace'];
+  industries.sort((a, b) => {
+    const ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 
   document.getElementById('source-filter-row').style.display = 'flex';
   const container = document.getElementById('source-pills');
-  container.innerHTML = companies.map(subj => {
-    const n = counts[subj];
-    const safe = subj.replace(/'/g, "\\'");
-    return `<button class="source-pill" data-source="${subj}" onclick="toggleSource('${safe}', this)">${subj} <span style="opacity:.55;font-size:10px;font-weight:400;">${n}</span></button>`;
+  container.innerHTML = industries.map(ind => {
+    const n = counts[ind];
+    const safe = ind.replace(/'/g, "\\'");
+    const isActive = activeIndustry === ind;
+    return `<button class="source-pill${isActive?' active':''}" data-industry="${ind}" onclick="toggleIndustry('${safe}',this)">${ind} <span style="opacity:.55;font-size:10px;font-weight:400;">${n}</span></button>`;
   }).join('');
 }
+
+// keep old name as alias so any stale refs don't crash
+const buildSourcePills = buildIndustryPills;
 
 function toggleExpand(uid) {
   const short = document.getElementById(uid + '_short');
@@ -2281,14 +2238,30 @@ function toggleExpand(uid) {
   full.style.display  = isCollapsed ? 'inline' : 'none';
 }
 
-function toggleSource(src, btn) {
-  if (activeSources.has(src)) {
-    activeSources.delete(src);
+function toggleIndustry(ind, btn) {
+  if (activeIndustry === ind) {
+    activeIndustry = '';
     btn.classList.remove('active');
   } else {
-    activeSources.add(src);
+    activeIndustry = ind;
+    document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
   }
+  selectedId = -1;
+  render();
+}
+
+// legacy alias — keeps any stale calls from crashing
+function toggleSource(src, btn) { toggleIndustry(src, btn); }
+
+function togglePlatform(key) {
+  if (activePlatforms.has(key)) {
+    activePlatforms.delete(key);
+  } else {
+    activePlatforms.add(key);
+  }
+  selectedId = -1;
+  buildPlatformWidget(currentData); // re-render widget to update active states
   render();
 }
 
@@ -2302,11 +2275,14 @@ function filterByCat(cat, event) {
 function resetHome() {
   activeFilter = 'all';
   activeSearch = '';
+  activeIndustry = '';
+  activePlatforms.clear();
   activeSources.clear();
   selectedId = -1;
   const searchInput = document.getElementById('search-input');
   if (searchInput) searchInput.value = '';
   document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.platform-row').forEach(r => r.classList.remove('active'));
   const titleEl = document.getElementById('hero-title');
   if (titleEl && _defaultHeroTitle) titleEl.textContent = _defaultHeroTitle;
   if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
@@ -2314,19 +2290,31 @@ function resetHome() {
   render();
 }
 
+const _PLATFORM_PREFIX = { appstore:'as_', googleplay:'gp_', trustpilot:'tp_', steam:'st_', youtube:'yt_' };
+
 function getFiltered() {
   return allRequests.filter(d => {
     const matchCat = activeFilter==='all' || d.category===activeFilter;
     const q = activeSearch.toLowerCase();
     const matchQ = !q || (d.action||'').toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q) || (d.summary||'').toLowerCase().includes(q);
 
-    // Company filter — if any companies active, demand subject must match one
-    let matchSrc = true;
-    if (activeSources.size > 0) {
-      matchSrc = activeSources.has(d.subject);
+    // Industry filter
+    const matchIndustry = !activeIndustry || COMPANY_TO_INDUSTRY[d.subject] === activeIndustry;
+
+    // Platform filter
+    let matchPlatform = activePlatforms.size === 0;
+    if (!matchPlatform) {
+      const ids = d.post_ids || [];
+      for (const pid of ids) {
+        if (activePlatforms.has('reddit') && !Object.values(_PLATFORM_PREFIX).some(p=>pid.startsWith(p))) { matchPlatform = true; break; }
+        for (const [key, pfx] of Object.entries(_PLATFORM_PREFIX)) {
+          if (activePlatforms.has(key) && pid.startsWith(pfx)) { matchPlatform = true; break; }
+        }
+        if (matchPlatform) break;
+      }
     }
 
-    return matchCat && matchQ && matchSrc;
+    return matchCat && matchQ && matchIndustry && matchPlatform;
   });
 }
 
@@ -2363,11 +2351,11 @@ function render() {
               const sub = d.source_subreddit && !['appstore','googleplay','trustpilot','steam','youtube'].includes(d.source_subreddit) ? d.source_subreddit : '';
               return hasReddit ? `<span class="source-badge reddit">${sub ? 'r/'+cleanSub(sub) : 'Reddit'}</span>` : '';
             })()}
-            ${(d.post_ids||[]).some(id=>id.startsWith('as_')) || d.source_subreddit === 'appstore' ? `<span class="source-badge appstore">📱 App Store</span>` : ''}
-            ${(d.post_ids||[]).some(id=>id.startsWith('gp_')) || d.source_subreddit === 'googleplay' ? `<span class="source-badge googleplay">▶ Google Play</span>` : ''}
-            ${(d.post_ids||[]).some(id=>id.startsWith('tp_')) || d.source_subreddit === 'trustpilot' ? `<span class="source-badge trustpilot">⭐ Trustpilot</span>` : ''}
-            ${(d.post_ids||[]).some(id=>id.startsWith('st_')) || d.source_subreddit === 'steam' ? `<span class="source-badge steam">🎮 Steam</span>` : ''}
-            ${(d.post_ids||[]).some(id=>id.startsWith('yt_')) || d.source_subreddit === 'youtube' ? `<span class="source-badge youtube">📺 YouTube</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('as_')) || d.source_subreddit === 'appstore' ? `<span class="source-badge appstore">Apple App Store</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('gp_')) || d.source_subreddit === 'googleplay' ? `<span class="source-badge googleplay">Google Play</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('tp_')) || d.source_subreddit === 'trustpilot' ? `<span class="source-badge trustpilot">Trustpilot</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('st_')) || d.source_subreddit === 'steam' ? `<span class="source-badge steam">Steam</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('yt_')) || d.source_subreddit === 'youtube' ? `<span class="source-badge youtube">YouTube</span>` : ''}
           </div>
           <div class="card-action">${sanitize(d.action||'No description')}</div>
           ${d.summary ? `<div class="card-summary">${sanitize(d.summary||'')}…</div>` : ''}
@@ -2423,8 +2411,8 @@ function selectRequest(id) {
       ? new Date(p.created_utc * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
       : '';
 
-    const sourceEmoji = isAppStore ? '📱 App Store' : isGooglePlay ? '▶ Google Play'
-      : isTrustpilot ? '⭐ Trustpilot' : isSteam ? '🎮 Steam' : isYouTube ? '📺 YouTube' : null;
+    const sourceEmoji = isAppStore ? 'Apple App Store' : isGooglePlay ? 'Google Play'
+      : isTrustpilot ? 'Trustpilot' : isSteam ? 'Steam' : isYouTube ? 'YouTube' : null;
     const scoreLabel = sourceEmoji
       ? `${sourceEmoji} · ${dateStr}`
       : `↑ ${(p.score||0).toLocaleString()} · reddit.com · ${dateStr}`;
@@ -2708,7 +2696,7 @@ async function saveSettings() {
   <h2>Don't see your product?</h2>
   <p class="section-sub">Request any company or app. The most-voted get added next.</p>
   <div class="request-input-row">
-    <input type="text" id="topic-input" placeholder="e.g. Airbnb, Chase, Robinhood…" maxlength="60"
+    <input type="text" id="topic-input" placeholder="Type a company or app name…" maxlength="60"
       onkeydown="if(event.key==='Enter')submitTopicRequest()">
     <button onclick="submitTopicRequest()">Request</button>
   </div>
