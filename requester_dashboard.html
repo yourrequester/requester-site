@@ -1061,7 +1061,7 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
 
 <!-- Header -->
 <header>
-  <div class="logo">
+  <div class="logo" onclick="resetHome()" style="cursor:pointer;" title="Home">
     <div class="logo-icon">R</div>
     <span class="logo-name">Requester</span>
   </div>
@@ -2005,9 +2005,26 @@ function toggleSource(src, btn) {
 }
 
 function filterByCat(cat, event) {
-  if (event) event.stopPropagation();
-  // Toggle: clicking the active category clears the filter
+  if (event) { event.stopPropagation(); event.preventDefault(); }
   activeFilter = (activeFilter === cat) ? 'all' : cat;
+  selectedId = -1;
+  render();
+}
+
+function resetHome() {
+  activeFilter = 'all';
+  activeSearch = '';
+  activeSources.clear();
+  selectedId = -1;
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) searchInput.value = '';
+  // Clear company pill active states
+  document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+  // Reset hero title to default
+  const titleEl = document.getElementById('hero-title');
+  if (titleEl && _defaultHeroTitle) titleEl.textContent = _defaultHeroTitle;
+  // Clear URL params
+  if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
   render();
 }
 
