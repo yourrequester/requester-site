@@ -6,7 +6,7 @@
 <head>
 <meta charset="UTF-8">
 <!-- Apply saved theme synchronously before first paint — prevents flash on tab return -->
-<script>(function(){var t=localStorage.getItem('requester_theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}else if(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+<script>(function(){document.documentElement.classList.add('no-transitions');var t=localStorage.getItem('requester_theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}else if(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches){document.documentElement.setAttribute('data-theme','dark');}requestAnimationFrame(function(){requestAnimationFrame(function(){document.documentElement.classList.remove('no-transitions');});});})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Requester — What People Are Asking For</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -18,6 +18,11 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+/* Suppress transitions during initial theme application to prevent flash */
+html.no-transitions, html.no-transitions *, html.no-transitions *::before, html.no-transitions *::after {
+  transition: none !important;
+}
+
 :root {
   --cream: #faf8f5;
   --white: #ffffff;
@@ -411,6 +416,16 @@ header {
 }
 html[data-theme="dark"] body .source-pill,
 body[data-theme="dark"] .source-pill { background: var(--white); }
+/* Dark mode: ensure thread-card links don't use browser default blue/purple */
+body[data-theme="dark"] a.thread-card,
+body[data-theme="dark"] a.thread-card:visited,
+body[data-theme="dark"] a.thread-card:link {
+  color: var(--ink);
+  text-decoration: none;
+}
+body[data-theme="dark"] a.thread-card:hover {
+  color: var(--ink);
+}
 
 .result-count {
   position: absolute;
@@ -1768,7 +1783,7 @@ async function _doVote(slug, btnEl) {
       }
     } else if (newVoted) {
       // Build count from scratch
-      detailBtn.innerHTML = `▲ <span id="detail-vote-count">1</span> vote`;
+      detailBtn.innerHTML = `▲ <span id="detail-vote-count">1</span>`;
     }
   }
 
@@ -1803,7 +1818,7 @@ async function _doVote(slug, btnEl) {
       if (realCount > 0) {
         const dce = document.getElementById('detail-vote-count');
         if (dce) { dce.textContent = realCount; }
-        else { dBtn.innerHTML = `▲ <span id="detail-vote-count">${realCount}</span> vote${realCount!==1?'s':''}`; }
+        else { dBtn.innerHTML = `▲ <span id="detail-vote-count">${realCount}</span>`; }
       } else {
         dBtn.innerHTML = '▲';
       }
@@ -1896,7 +1911,7 @@ function renderTopicRequests() {
 
   const sorted = [..._topicRequests].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
   if (!sorted.length) {
-    el.innerHTML = '<p class="topic-empty">No requests yet — be the first!</p>';
+    el.innerHTML = '';
     return;
   }
 
@@ -2703,7 +2718,7 @@ function selectRequest(id) {
       <div class="detail-score-label">Gravity Score</div>
       <div style="margin-left:auto;">
         <button class="upvote-btn-lg ${d.user_voted?'voted':''}" id="detail-vote-btn" onclick="toggleVote('${d.slug||_clientSlug(d.subject,d.action)}',event,this)" data-slug="${d.slug||_clientSlug(d.subject,d.action)}">
-          ▲${(d.vote_count||0)>0?` <span id="detail-vote-count">${d.vote_count}</span> vote${d.vote_count!==1?'s':''}`:``}
+          ▲${(d.vote_count||0)>0?` <span id="detail-vote-count">${d.vote_count}</span>`:``}
         </button>
       </div>
     </div>
