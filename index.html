@@ -1,4 +1,7 @@
 <!DOCTYPE html>
+<!-- Redirect: this file is also served as index.html at the root.
+     If someone navigates directly to /requester_dashboard.html, send them to /. -->
+<script>if(window.location.pathname.toLowerCase().includes('requester_dashboard.html')){window.location.replace('/'+window.location.search+window.location.hash);}</script>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -851,6 +854,8 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
   transition: all 0.15s;
   text-decoration: none;
   display: block;
+  color: var(--ink);
+  background: var(--white);
 }
 
 .thread-card:hover {
@@ -941,7 +946,14 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background .15s;
 }
+.cat-row:hover { background: var(--ink-faint); }
+.cat-row.cat-row-active { background: var(--accent); }
+.cat-row.cat-row-active .cat-name,
+.cat-row.cat-row-active .cat-num { color: #fff; }
 
 .cat-name {
   font-size: 12px;
@@ -1112,6 +1124,39 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
   transition: border-color .15s, box-shadow .15s;
 }
 .google-signin-btn:hover { border-color: var(--ink-mid); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.shared-banner {
+  background: var(--accent); color: #fff; text-align: center;
+  padding: 10px 20px; font-size: 13px; font-weight: 500;
+}
+.shared-banner button {
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4);
+  color: #fff; border-radius: 4px; padding: 2px 10px; cursor: pointer;
+  font-size: 12px; font-family: inherit;
+}
+.shared-banner button:hover { background: rgba(255,255,255,.35); }
+.about-nav-btn {
+  background: none; border: none; font-size: 13px; font-weight: 500;
+  color: var(--ink-mid); cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  font-family: inherit; transition: color .15s, background .15s;
+}
+.about-nav-btn:hover { color: var(--ink); background: var(--ink-faint); }
+.about-popover {
+  position: absolute; top: calc(100% + 10px); right: 0; width: 320px;
+  background: var(--white); border: 1px solid var(--ink-faint);
+  border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,.12);
+  padding: 20px; z-index: 200; animation: fadeIn .15s ease;
+}
+.about-popover-section { margin-bottom: 16px; }
+.about-popover-section:last-child { margin-bottom: 0; }
+.about-popover-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--ink-light); margin-bottom: 5px;
+}
+.about-popover-body { font-size: 13px; color: var(--ink-mid); line-height: 1.6; }
+.about-email-reveal {
+  background: none; border: none; color: var(--accent); cursor: pointer;
+  font-size: 13px; font-family: inherit; padding: 0; text-decoration: underline;
+}
 .dark-toggle {
   background: none; border: 1px solid var(--ink-faint); border-radius: 999px;
   width: 32px; height: 32px; font-size: 15px; cursor: pointer;
@@ -1186,6 +1231,23 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
     <span class="logo-name">Requester</span>
   </div>
   <div class="header-right">
+    <div class="about-nav" style="position:relative;">
+      <button class="about-nav-btn" id="about-nav-btn" onclick="toggleAboutPopover(event)">Who we are</button>
+      <div class="about-popover" id="about-popover" style="display:none;">
+        <div class="about-popover-section">
+          <div class="about-popover-label">What is Requester?</div>
+          <div class="about-popover-body">Requester monitors the most popular places for product feedback, then extracts and ranks the top requests, bug fixes, and feature asks.</div>
+        </div>
+        <div class="about-popover-section">
+          <div class="about-popover-label">Gravity Score</div>
+          <div class="about-popover-body">Combines <strong>upvotes</strong>, <strong>unique threads</strong>, and <strong>recency</strong> to surface what people are asking for most.</div>
+        </div>
+        <div class="about-popover-section">
+          <div class="about-popover-label">Contact</div>
+          <div class="about-popover-body">Interested in a custom dashboard or integration? <button class="about-email-reveal" onclick="document.getElementById('about-email').style.display='inline'">Show contact</button><span id="about-email" style="display:none;"> hello@requester.org</span></div>
+        </div>
+      </div>
+    </div>
     <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
     <!-- Auth area -->
     <div class="auth-area" id="auth-area">
@@ -1425,7 +1487,7 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
 
 <script>
 let allRequests = [], postLookup = {}, currentData = {};
-let activeFilter = 'all', activeSearch = '', selectedId = -1;
+let activeFilter = 'all', activeSearch = '', selectedId = -1, sharedSlug = '';
 let activeSources = new Set(); // legacy — kept for resetHome compat
 let activeIndustry = '';
 let activePlatforms = new Set();
@@ -1587,10 +1649,17 @@ async function _doVote(slug, btnEl) {
     b.classList.toggle('voted', newVoted);
     b.style.animation = 'none';
     requestAnimationFrame(() => { b.style.animation = 'vote-pop 0.3s ease'; });
-    const countEl = b.querySelector('.vote-count');
+    let countEl = b.querySelector('.vote-count');
+    if (!countEl && newVoted) {
+      // Create span if it doesn't exist yet (was 0)
+      countEl = document.createElement('span');
+      countEl.className = 'vote-count';
+      b.appendChild(countEl);
+    }
     if (countEl) {
       const cur = parseInt(countEl.textContent) || 0;
-      countEl.textContent = newVoted ? cur + 1 : Math.max(0, cur - 1);
+      const next = newVoted ? cur + 1 : Math.max(0, cur - 1);
+      if (next === 0) countEl.remove(); else countEl.textContent = next;
     }
   });
   // Update detail panel count
@@ -1813,16 +1882,22 @@ function _esc(s) {
 function applyUrlParams() {
   const params = new URLSearchParams(window.location.search);
 
-  // ?slug=... → find matching demand and open it
+  // ?slug=... → show ONLY that request with a "shared" banner
   const slug = params.get('slug');
   if (slug) {
     setTimeout(() => {
       const demand = allRequests.find(d =>
         (d.slug || _clientSlug(d.subject, d.action)) === slug
       );
-      if (demand) selectRequest(demand._id);
+      if (demand) {
+        sharedSlug = slug;
+        render(); // re-render filtered to just this request
+        selectRequest(demand._id);
+        // Show dismissible banner
+        _showSharedBanner();
+      }
     }, 150);
-    return; // don't also apply subject filter when linking to a specific item
+    return;
   }
 
   // ?subject=... / ?company=... → filter by company name
@@ -1850,6 +1925,40 @@ function shareSubject(slug, event) {
 
 // ── Toast ─────────────────────────────────────────────────
 let _toastTimer = null;
+function _showSharedBanner() {
+  if (document.getElementById('shared-banner')) return;
+  const el = document.createElement('div');
+  el.id = 'shared-banner';
+  el.className = 'shared-banner';
+  el.innerHTML = `Viewing a shared request &nbsp;·&nbsp; <button onclick="exitSharedView()">See all requests</button>`;
+  document.querySelector('.hero').after(el);
+}
+
+function exitSharedView() {
+  sharedSlug = '';
+  const banner = document.getElementById('shared-banner');
+  if (banner) banner.remove();
+  if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
+  render();
+}
+
+function toggleAboutPopover(e) {
+  e.stopPropagation();
+  const pop = document.getElementById('about-popover');
+  const isOpen = pop.style.display !== 'none';
+  pop.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // Close when clicking anywhere else
+    const close = (ev) => {
+      if (!pop.contains(ev.target)) {
+        pop.style.display = 'none';
+        document.removeEventListener('click', close);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  }
+}
+
 function toggleDark() {
   const isDark = document.body.getAttribute('data-theme') === 'dark';
   document.body.setAttribute('data-theme', isDark ? '' : 'dark');
@@ -2058,7 +2167,7 @@ function ingestData(data) {
   const ytq    = data.youtube_searches || [];
   const platformCount = [subs.length, apps.length, gpapps.length, tpcos.length, steam.length, ytq.length].filter(n=>n>0).length;
   const totalCount = allRequests.length;
-  heroSub.textContent = totalCount ? `${totalCount.toLocaleString()} requests across ${platformCount} source${platformCount!==1?'s':''}` : '';
+  heroSub.textContent = totalCount ? `${totalCount.toLocaleString()} requests tracked` : '';
   heroSub.style.display = totalCount ? '' : 'none';
 
   // Hero stats — requests + products only (no posts scanned)
@@ -2083,12 +2192,12 @@ function ingestData(data) {
 
 // ── Platform icons widget ─────────────────────────────────
 const PLATFORM_ICONS = {
-  appstore:   { label: 'App Store',   svg: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="currentColor"/></svg>' },
-  googleplay: { label: 'Google Play', svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 20.5v-17c0-.83 1-.95 1.4-.4l14 8.5c.4.24.4.76 0 1L4.4 21c-.4.5-1.4.33-1.4-.5z" fill="#01875f"/></svg>' },
-  reddit:     { label: 'Reddit',      svg: '<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#FF4500"/><path d="M20 12a2 2 0 00-2-2 2 2 0 00-1.4.6A9.7 9.7 0 0012.5 9l.9-4.3 2.9.6a1.4 1.4 0 101.4-1.4 1.4 1.4 0 00-1.3.9l-3.2-.7a.4.4 0 00-.4.3l-1 4.8a9.7 9.7 0 00-4.5 1.6A2 2 0 004 12a2 2 0 001 1.7 3.6 3.6 0 000 .5c0 2.6 3.1 4.8 6.9 4.8s6.9-2.1 6.9-4.8a4 4 0 000-.5A2 2 0 0020 12zm-12 1.7a1.2 1.2 0 111.2 1.2A1.2 1.2 0 018 13.7zm6.7 3.2c-.8.8-2.3.9-2.7.9s-1.9 0-2.7-.9a.3.3 0 01.4-.4c.5.5 1.6.7 2.3.7s1.8-.2 2.3-.7a.3.3 0 01.4.4zm-.2-2a1.2 1.2 0 111.2-1.2 1.2 1.2 0 01-1.2 1.2z" fill="white"/></svg>' },
-  trustpilot: { label: 'Trustpilot',  svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="#00B67A"/></svg>' },
-  youtube:    { label: 'YouTube',     svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z" fill="#FF0000"/></svg>' },
-  steam:      { label: 'Steam',       svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M11.98 0C5.37 0 0 5.25 0 11.74c0 4.96 3.07 9.22 7.43 10.97l2.44-6.1a3.45 3.45 0 01-1.34-2.72 3.48 3.48 0 013.48-3.48 3.48 3.48 0 013.48 3.48c0 .63-.18 1.21-.48 1.71l-6.1 2.47C10.12 19.97 11.02 20 11.98 20 18.62 20 24 14.75 24 8.26 24 3.7 21.53 0 11.98 0z" fill="currentColor"/></svg>' },
+  reddit:     { label: 'Reddit' },
+  appstore:   { label: 'Apple App Store' },
+  googleplay: { label: 'Google Play' },
+  trustpilot: { label: 'Trustpilot' },
+  youtube:    { label: 'YouTube' },
+  steam:      { label: 'Steam' },
 };
 
 function buildPlatformWidget(data) {
@@ -2109,7 +2218,6 @@ function buildPlatformWidget(data) {
     const p = PLATFORM_ICONS[key];
     const isActive = activePlatforms.has(key);
     return `<div class="platform-row${isActive?' active':''}" onclick="togglePlatform('${key}')" style="cursor:pointer;" title="Filter by ${p.label}">
-      <div class="platform-icon">${p.svg}</div>
       <span>${p.label}</span>
       <span class="platform-count">${fmt(n)}</span>
     </div>`;
@@ -2136,13 +2244,15 @@ function buildCats() {
   const counts = {};
   allRequests.forEach(d => { counts[d.category||'Other'] = (counts[d.category||'Other']||0)+1; });
   const max = Math.max(...Object.values(counts),1);
-  const html = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([cat,cnt]) =>
-    `<div class="cat-row">
+  const html = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([cat,cnt]) => {
+    const isActive = activeFilter === cat;
+    const safe = cat.replace(/'/g,"\\'");
+    return `<div class="cat-row${isActive?' cat-row-active':''}" onclick="filterByCat('${safe}',event)" style="cursor:pointer;" title="Filter by ${cat}">
       <div class="cat-name">${cat}</div>
       <div class="cat-track"><div class="cat-fill" style="width:${cnt/max*100}%;background:${catColor[cat]||'#9a9590'}"></div></div>
       <div class="cat-num">${cnt}</div>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
   document.getElementById('cat-body').innerHTML = html;
 }
 
@@ -2279,12 +2389,21 @@ function resetHome() {
   activePlatforms.clear();
   activeSources.clear();
   selectedId = -1;
+  sharedSlug = '';
   const searchInput = document.getElementById('search-input');
   if (searchInput) searchInput.value = '';
   document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.platform-row').forEach(r => r.classList.remove('active'));
   const titleEl = document.getElementById('hero-title');
   if (titleEl && _defaultHeroTitle) titleEl.textContent = _defaultHeroTitle;
+  // Reset detail panel to placeholder
+  const detailBody = document.getElementById('detail-body');
+  if (detailBody) detailBody.innerHTML = `<div class="detail-placeholder" style="text-align:center;padding:32px 20px;">
+    <div style="font-size:52px;opacity:0.12;line-height:1;margin-bottom:14px;">◎</div>
+    <div style="font-size:13px;font-weight:600;color:var(--ink-mid);margin-bottom:4px;">Nothing selected</div>
+    <div style="font-size:12px;color:var(--ink-light);line-height:1.5;">Click any request card<br>to explore its details.</div>
+  </div>`;
+  document.getElementById('detail-rank').textContent = '';
   if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   render();
@@ -2293,6 +2412,11 @@ function resetHome() {
 const _PLATFORM_PREFIX = { appstore:'as_', googleplay:'gp_', trustpilot:'tp_', steam:'st_', youtube:'yt_' };
 
 function getFiltered() {
+  // Shared-link mode: show only the one linked request
+  if (sharedSlug) {
+    return allRequests.filter(d => (d.slug || _clientSlug(d.subject, d.action)) === sharedSlug);
+  }
+
   return allRequests.filter(d => {
     const matchCat = activeFilter==='all' || d.category===activeFilter;
     const q = activeSearch.toLowerCase();
@@ -2372,7 +2496,7 @@ function render() {
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button class="upvote-btn ${d.user_voted?'voted':''}" onclick="toggleVote('${d.slug||''}',event,this)" data-slug="${d.slug||''}">
-            ▲ <span class="vote-count">${d.vote_count||0}</span>
+            ▲${(d.vote_count||0) > 0 ? ` <span class="vote-count">${d.vote_count}</span>` : ''}
           </button>
           <button class="share-btn" onclick="shareSubject('${(d.slug||_clientSlug(d.subject,d.action)).replace(/'/g,"\\'")}',event)" title="Copy link to this request">🔗</button>
         </div>
