@@ -2,7 +2,7 @@ name: Scrape Requester Data
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # every 6 hours
+    - cron: '0 8 * * *'   # every day at 8 AM UTC
   workflow_dispatch:          # allows manual run from GitHub Actions tab
 
 env:
