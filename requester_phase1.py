@@ -109,9 +109,7 @@ GOOGLE_TRENDS_BOOST   = bool(_cfg.get("google_trends_boost", True))
 TARGET_NAME           = _cfg.get("target_name", "")
 
 COMMENT_DELAY = 1.2
-APP_STORE_MIN_RATING  = 3
-APP_STORE_DELAY       = 1.0
-GOOGLE_PLAY_MAX_RATING = 3
+APP_STORE_DELAY = 1.0
 
 
 # ── Reddit Fetching ───────────────────────────────────────────────────────────
@@ -900,7 +898,7 @@ Return ONLY a JSON array. No markdown, no explanation.
         print(f"\n🤖 Batch {batch_num}/{total_batches} → Claude ({len(summaries)} items)...")
         message = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=8000,
+            max_tokens=16000,
             messages=[{"role": "user", "content": prompt}]
         )
         raw = message.content[0].text.strip()
@@ -1000,6 +998,10 @@ def run():
         enriched.append(full if full else post)
 
     post_lookup = {p["id"]: p for p in unique_posts}
+    # Write enriched posts (with comments) back to post_lookup so gravity
+    # scores include comment engagement for Reddit posts
+    for ep in enriched:
+        post_lookup[ep["id"]] = ep
 
     # ── App Store ingestion ───────────────────────────────────────────────────
     appstore_reviews = []
@@ -1064,23 +1066,21 @@ def run():
                 for r in yt_list: post_lookup[r["id"]] = r
             print(f"  Total YouTube comments added: {len(youtube_comments)}")
 
-    # ── Merge all non-Reddit sources, filter for intent ───────────────────────
+    # ── Merge all non-Reddit sources ────────────────────────────────────────
+    # External reviews are already low-rating (1-3★) complaints — no intent
+    # filter needed. Applying one was dropping valid complaints that didn't
+    # happen to contain magic keywords.
     all_external = (appstore_reviews + googleplay_reviews + trustpilot_reviews
                     + steam_reviews + youtube_comments)
-    external_intent = [
-        r for r in all_external
-        if contains_intent(r.get("title","") + " " + r.get("selftext",""))
-        and r.get("score", 0) > 0
-    ]
 
     # Breakdown for logging
     def _count_src(lst, src): return sum(1 for r in lst if r.get("_source") == src)
-    ext_counts = {s: _count_src(external_intent, s)
+    ext_counts = {s: _count_src(all_external, s)
                   for s in ("appstore","googleplay","trustpilot","steam","youtube")}
     ext_summary = ", ".join(f"{v} {k}" for k, v in ext_counts.items() if v > 0)
-    print(f"\n  External intent-bearing: {len(external_intent)} / {len(all_external)} ({ext_summary})")
+    print(f"\n  External reviews: {len(all_external)} ({ext_summary})")
 
-    combined = external_intent + enriched[:MAX_POSTS_FOR_AI]
+    combined = all_external + enriched[:MAX_POSTS_FOR_AI]
     reddit_count = min(len(enriched), MAX_POSTS_FOR_AI)
     print(f"  Sending to Claude: {ext_summary} + {reddit_count} Reddit = {len(combined)} total")
 
@@ -1154,7 +1154,7 @@ def run():
         "steam_reviews":       len(steam_reviews),
         "youtube_comments":    len(youtube_comments),
         "requests_found":      len(demands),
-        "leaderboard":         demands[:100],
+        "leaderboard":         demands[:200],
         "post_lookup": {
             pid: {
                 "title":        p.get("title",""),

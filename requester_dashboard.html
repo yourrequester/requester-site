@@ -1776,11 +1776,17 @@ function ingestData(data) {
   document.getElementById('hero-title').textContent = heroTitle;
   _defaultHeroTitle = heroTitle;
 
-  // Subtitle: always show sources as small text
-  // Hero subtitle — sources only (no signal count)
+  // Hero subtitle — compact summary of platforms
   const heroSub = document.getElementById('hero-sub');
-  heroSub.textContent = allSources.join(' · ');
-  heroSub.style.display = '';
+  const platformNames = [];
+  if (subs.length) platformNames.push('Reddit');
+  if (apps.length) platformNames.push('App Store');
+  if (gpapps.length) platformNames.push('Google Play');
+  if (tpcos.length) platformNames.push('Trustpilot');
+  if (steam.length) platformNames.push('Steam');
+  if (ytq.length) platformNames.push('YouTube');
+  heroSub.textContent = platformNames.length ? 'Tracking ' + platformNames.join(' · ') : '';
+  heroSub.style.display = platformNames.length ? '' : 'none';
 
   // Hero stats — requests + products only (no posts scanned)
   const companyCount = new Set(allRequests.map(d=>d.subject)).size;
@@ -2328,40 +2334,37 @@ async function saveSettings() {
     <!-- What is Requester -->
     <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">What is Requester?</div>
-      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">The voice of your customers, ranked and distilled.</h3>
-      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Requester monitors Reddit, app stores, Trustpilot, YouTube, and more — then uses AI to extract and rank the most-requested product changes, bug fixes, and features. Updated every 6 hours.</p>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">The voice of your customers, ranked.</h3>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Requester monitors the most popular places for product feedback — then uses AI to extract and rank the top requests, bug fixes, and feature asks.</p>
     </div>
 
     <!-- Gravity Score -->
     <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">How is Gravity Score calculated?</div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">Gravity Score</div>
       <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">More signal, more weight.</h3>
-      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Gravity combines three signals: <strong>upvotes</strong> (community validation), <strong>unique threads</strong> (how many separate conversations mention it), and <strong>recency</strong> (recent requests score higher). A Google Trends boost of up to 2.5× amplifies requests currently spiking in public search interest.</p>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Gravity combines <strong>upvotes</strong> (community validation), <strong>unique threads</strong> (independent conversations mentioning the same request), and <strong>recency</strong> (newer requests score higher).</p>
     </div>
 
     <!-- Contact -->
     <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">Contact & Business</div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">Contact</div>
       <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">Built for product teams.</h3>
-      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Interested in tracking a different industry, white-label access, or custom integrations? We'd love to hear from you.</p>
-      <a href="mailto:YourRequester@gmail.com" style="display:inline-block;margin-top:16px;padding:9px 20px;background:var(--accent);color:#fff;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;letter-spacing:0.02em;">Get in touch →</a>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Interested in a custom dashboard, different industry, or integration?</p>
+      <button id="reveal-contact-btn" onclick="this.style.display='none';document.getElementById('contact-revealed').style.display='block';" style="margin-top:16px;padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.02em;">Show contact info</button>
+      <div id="contact-revealed" style="display:none;margin-top:16px;font-size:14px;color:var(--ink);">
+        <a href="mailto:YourRequester@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:600;">YourRequester@gmail.com</a>
+      </div>
     </div>
 
   </div>
 </section>
 
 <!-- Footer -->
-<footer style="border-top:1px solid var(--ink-faint);margin-top:60px;padding:32px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <div class="logo-icon" style="width:26px;height:26px;font-size:13px;">R</div>
-    <span style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);">Requester</span>
-  </div>
-  <div style="font-size:13px;color:var(--ink-mid);text-align:center;">
-    Tracking what people are asking for — across every platform.
-  </div>
-  <div style="font-size:13px;color:var(--ink-mid);">
-    Business inquiries: <a href="mailto:YourRequester@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:500;">YourRequester@gmail.com</a>
-  </div>
+<footer style="border-top:1px solid var(--ink-faint);margin-top:60px;padding:32px 40px;display:flex;align-items:center;justify-content:center;gap:10px;">
+  <div class="logo-icon" style="width:22px;height:22px;font-size:11px;">R</div>
+  <span style="font-size:13px;color:var(--ink-light);">Requester</span>
+  <span style="font-size:13px;color:var(--ink-faint);">·</span>
+  <span style="font-size:13px;color:var(--ink-light);">Tracking what people are asking for</span>
 </footer>
 
 </body>
