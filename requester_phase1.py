@@ -130,21 +130,40 @@ INTENT_KEYWORDS = [
 ]
 
 HEADERS = {
-    "User-Agent": "Requester-PoC/1.0 (personal research project; non-commercial)"
+    # Browser-style UA avoids Reddit's bot-blocker on GitHub Actions IPs
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
 }
+
+_REDDIT_DELAYS = [2, 5, 10]  # back-off seconds between retries
 
 
 def fetch_posts(subreddit, sort, limit):
-    url = f"https://www.reddit.com/r/{subreddit}/{sort}.json?limit={limit}"
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=15)
-        resp.raise_for_status()
-        posts = resp.json()["data"]["children"]
-        print(f"  ✓ {len(posts)} posts from r/{subreddit}/{sort}")
-        return [p["data"] for p in posts]
-    except Exception as e:
-        print(f"  ✗ Failed {sort}: {e}")
-        return []
+    url = f"https://www.reddit.com/r/{subreddit}/{sort}.json?limit={limit}&raw_json=1"
+    for attempt, delay in enumerate(_REDDIT_DELAYS + [None], start=1):
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=20)
+            if resp.status_code == 429:
+                wait = int(resp.headers.get("Retry-After", delay or 30))
+                print(f"  ⏳ Rate-limited r/{subreddit}/{sort} — waiting {wait}s")
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            posts = resp.json()["data"]["children"]
+            print(f"  ✓ {len(posts)} posts from r/{subreddit}/{sort}")
+            return [p["data"] for p in posts]
+        except Exception as e:
+            if delay is None:
+                print(f"  ✗ Failed {sort}: {e}")
+                return []
+            print(f"  ↩ Retry {attempt} r/{subreddit}/{sort} in {delay}s ({e})")
+            time.sleep(delay)
+    return []
 
 
 def fetch_post_with_comments(subreddit, post_id):
