@@ -37,6 +37,9 @@ jobs:
           SUPABASE_ANON_KEY:  ${{ secrets.SUPABASE_ANON_KEY }}
         run: python requester_phase1.py
 
+      - name: Pull latest before committing
+        run: git pull --rebase origin main
+
       - name: Commit updated results
         uses: stefanzweifel/git-auto-commit-action@v5.0.1
         with:
