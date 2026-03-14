@@ -952,6 +952,122 @@ def calculate_gravity(demand, post_lookup):
     return round(main + base, 1)
 
 
+# ── Supabase Topic Queue ──────────────────────────────────────────────────────
+
+_SUPA_URL = os.getenv("SUPABASE_URL", "")
+_SUPA_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+
+def _supa_headers():
+    return {"apikey": _SUPA_KEY, "Authorization": f"Bearer {_SUPA_KEY}",
+            "Content-Type": "application/json"}
+
+def fetch_pending_topics():
+    """Return list of pending topic_requests rows from Supabase."""
+    if not _SUPA_URL or not _SUPA_KEY:
+        return []
+    try:
+        resp = requests.get(
+            f"{_SUPA_URL}/rest/v1/topic_requests",
+            headers=_supa_headers(),
+            params={"status": "eq.pending", "select": "id,company_name", "limit": "10"},
+            timeout=10,
+        )
+        return resp.json() if resp.ok else []
+    except Exception as e:
+        print(f"  ⚠ Could not fetch topic queue: {e}")
+        return []
+
+def mark_topics_live(topic_ids):
+    """Mark processed topic requests as live in Supabase."""
+    if not _SUPA_URL or not _SUPA_KEY or not topic_ids:
+        return
+    for tid in topic_ids:
+        try:
+            requests.patch(
+                f"{_SUPA_URL}/rest/v1/topic_requests",
+                headers=_supa_headers(),
+                params={"id": f"eq.{tid}"},
+                json={"status": "live"},
+                timeout=10,
+            )
+        except Exception:
+            pass
+
+def discover_app_ids(company_name):
+    """Try to auto-discover App Store ID and Google Play package for a company name.
+    Returns dict with keys: appstore_id, googleplay_id (either may be None)."""
+    result = {"appstore_id": None, "googleplay_id": None}
+    name_q = company_name.lower().replace(" ", "+")
+
+    # Apple App Store search
+    try:
+        r = requests.get(
+            f"https://itunes.apple.com/search?term={name_q}&entity=software&limit=3",
+            timeout=8,
+        )
+        if r.ok:
+            hits = r.json().get("results", [])
+            for hit in hits:
+                if company_name.lower() in hit.get("trackName", "").lower():
+                    result["appstore_id"] = str(hit["trackId"])
+                    break
+    except Exception:
+        pass
+
+    # Google Play — try standard package name patterns
+    clean = re.sub(r"[^a-z0-9]", "", company_name.lower())
+    candidates = [
+        f"com.{clean}.android",
+        f"com.{clean}",
+        f"com.{clean}.mobile",
+        f"com.{clean}.app",
+    ]
+    try:
+        from google_play_scraper import app as gp_app
+        for pkg in candidates:
+            try:
+                info = gp_app(pkg, lang="en", country="us")
+                if info and info.get("title"):
+                    result["googleplay_id"] = pkg
+                    break
+            except Exception:
+                pass
+    except ImportError:
+        pass
+
+    return result
+
+def fetch_reddit_search(query, limit=50):
+    """Search Reddit across all subreddits for posts about a topic."""
+    url = "https://www.reddit.com/search.json"
+    headers = {"User-Agent": "RequesterBot/1.0"}
+    posts = []
+    try:
+        r = requests.get(url, headers=headers,
+                         params={"q": query, "limit": limit, "sort": "top", "t": "month"},
+                         timeout=10)
+        if not r.ok:
+            return []
+        for child in r.json().get("data", {}).get("children", []):
+            d = child.get("data", {})
+            if not d.get("id"):
+                continue
+            posts.append({
+                "id":          d["id"],
+                "title":       d.get("title", ""),
+                "score":       d.get("score", 0),
+                "selftext":    d.get("selftext", "")[:500],
+                "permalink":   d.get("permalink", ""),
+                "created_utc": d.get("created_utc", 0),
+                "_source":     "reddit",
+                "_subreddit":  d.get("subreddit", ""),
+                "top_comments": [],
+            })
+    except Exception as e:
+        print(f"  ⚠ Reddit search failed: {e}")
+    return posts
+
+
 # ── Main Pipeline ─────────────────────────────────────────────────────────────
 
 def run():
@@ -960,6 +1076,45 @@ def run():
     print("  REQUESTER v2 — Community Request Intelligence")
     print(f"  Targets: {subs_label}")
     print("=" * 60)
+
+    # ── Dynamic topic queue (Phase 2b) ───────────────────────────────────────
+    # Pull pending user-requested topics from Supabase and inject them into
+    # this run's config dynamically, then mark them live after scraping.
+    _pending_topic_ids = []
+    pending_topics = fetch_pending_topics()
+    if pending_topics:
+        print(f"\n📬 Processing {len(pending_topics)} queued topic request(s)...")
+        for topic in pending_topics:
+            name = topic["company_name"]
+            _pending_topic_ids.append(topic["id"])
+            print(f"  → {name}")
+
+            # Reddit search for this company
+            search_posts = fetch_reddit_search(f"{name} app complaints OR review OR bug OR feature request", limit=40)
+            for p in search_posts:
+                p["_app_name"] = name
+
+            # App ID auto-discovery
+            ids = discover_app_ids(name)
+            clean_name = re.sub(r"[^a-z0-9]", "", name.lower())
+
+            if ids["appstore_id"]:
+                APP_STORE_APPS.append({"name": name, "app_id": ids["appstore_id"]})
+                print(f"    ✓ App Store: {ids['appstore_id']}")
+            if ids["googleplay_id"]:
+                GOOGLE_PLAY_APPS.append({"name": name, "app_id": ids["googleplay_id"]})
+                print(f"    ✓ Google Play: {ids['googleplay_id']}")
+            # Trustpilot: guess domain
+            TRUSTPILOT_COMPANIES.append({"name": name, "slug": f"{clean_name}.com"})
+
+            # YouTube searches
+            YOUTUBE_SEARCHES.append(f"{name} app complaints")
+            YOUTUBE_SEARCHES.append(f"{name} feature request")
+
+            # Inject search posts directly into reddit pool
+            all_extra_reddit = search_posts
+    else:
+        all_extra_reddit = []
 
     all_raw_posts = []
     for sub in SUBREDDITS:
@@ -970,6 +1125,9 @@ def run():
             for p in posts:
                 p["_subreddit"] = sub
             all_raw_posts.extend(posts)
+
+    # Merge any extra reddit posts from the topic queue search
+    all_raw_posts.extend(all_extra_reddit)
 
     seen_ids, unique_posts = set(), []
     for p in all_raw_posts:
@@ -1213,6 +1371,12 @@ def run():
     except Exception as e:
         print(f"\n  ⚠  DB save failed (JSON still saved): {e}")
         print(f"\n\n  ✅ Saved to requester_results.json ({len(demands)} requests)")
+
+    # Mark queued topics as live now that we've scraped them
+    if _pending_topic_ids:
+        mark_topics_live(_pending_topic_ids)
+        print(f"  📬 Marked {len(_pending_topic_ids)} topic request(s) as live in Supabase")
+
     print("=" * 60)
 
 

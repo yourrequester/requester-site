@@ -31,8 +31,10 @@ jobs:
 
       - name: Run scraper
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC }}
-          YOUTUBE_API_KEY:   ${{ secrets.YOUTUBE }}
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC }}
+          YOUTUBE_API_KEY:    ${{ secrets.YOUTUBE }}
+          SUPABASE_URL:       ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY:  ${{ secrets.SUPABASE_ANON_KEY }}
         run: python requester_phase1.py
 
       - name: Commit updated results

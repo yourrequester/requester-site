@@ -477,6 +477,123 @@ body[data-theme="dark"] .source-pill { background: var(--white); }
   100% { transform: scale(1); }
 }
 
+/* ── Topic Request Section ──────────────────────────── */
+.request-section {
+  max-width: 1200px;
+  margin: 60px auto 0;
+  padding: 0 40px;
+}
+.request-section h2 {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.request-section .section-sub {
+  font-size: 14px;
+  color: var(--ink-mid);
+  margin-bottom: 24px;
+}
+.request-input-row {
+  display: flex;
+  gap: 10px;
+  max-width: 480px;
+  margin-bottom: 28px;
+}
+.request-input-row input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1.5px solid var(--ink-faint);
+  border-radius: 999px;
+  font-size: 14px;
+  font-family: var(--body);
+  background: var(--white);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.request-input-row input:focus { border-color: var(--accent); }
+.request-input-row input::placeholder { color: var(--ink-light); }
+.request-input-row button {
+  padding: 10px 22px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.request-input-row button:hover { opacity: 0.88; }
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.topic-card {
+  background: var(--white);
+  border: 1.5px solid var(--ink-faint);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.topic-card-left { min-width: 0; }
+.topic-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topic-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.topic-badge.live {
+  background: rgba(46,204,113,0.12);
+  color: #27ae60;
+}
+.topic-badge.pending {
+  background: rgba(243,156,18,0.12);
+  color: #d68910;
+}
+.topic-vote-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--ink-faint);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.topic-vote-btn:hover { border-color: var(--accent); color: var(--accent); }
+.topic-vote-btn.voted { background: var(--accent); border-color: var(--accent); color: #fff; }
+.topic-vote-btn svg { width: 12px; height: 12px; fill: currentColor; }
+.topic-empty {
+  color: var(--ink-light);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
 .card-top {
   display: flex;
   align-items: flex-start;
@@ -1336,6 +1453,7 @@ async function initAuth() {
     if (session) {
       _applySession(session);
       await loadVoteCounts();
+      await loadTopicRequests();
       if (_pendingVoteSlug) {
         const slug = _pendingVoteSlug;
         _pendingVoteSlug = null;
@@ -1541,6 +1659,141 @@ function _launchConfetti(btnEl) {
   }
 }
 
+// ── Topic Requests (Phase 2b) ─────────────────────────────
+let _topicRequests = [];
+let _topicUserVotes = new Set(); // topic IDs the current user has voted for
+
+async function loadTopicRequests() {
+  if (!_sb) return;
+  const [reqRes, voteRes] = await Promise.all([
+    _sb.from('topic_requests').select('id,company_name,status').order('created_at', { ascending: false }).limit(20),
+    currentUser
+      ? _sb.from('topic_votes').select('topic_id').eq('user_id', currentUser.id)
+      : Promise.resolve({ data: [] }),
+  ]);
+  _topicRequests = reqRes.data || [];
+  _topicUserVotes = new Set((voteRes.data || []).map(r => r.topic_id));
+
+  // Attach live vote counts
+  if (_topicRequests.length) {
+    const ids = _topicRequests.map(t => t.id);
+    const { data: vcRows } = await _sb.from('topic_votes').select('topic_id').in('topic_id', ids);
+    const counts = {};
+    (vcRows || []).forEach(r => { counts[r.topic_id] = (counts[r.topic_id] || 0) + 1; });
+    _topicRequests.forEach(t => { t.vote_count = counts[t.id] || 0; });
+  }
+
+  renderTopicRequests();
+}
+
+function renderTopicRequests() {
+  const el = document.getElementById('topic-list');
+  if (!el) return;
+
+  // Companies already tracked in the live feed
+  const liveNames = new Set(
+    (currentData?.leaderboard || []).map(d => (d.subject || '').toLowerCase())
+  );
+
+  const sorted = [..._topicRequests].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
+  if (!sorted.length) {
+    el.innerHTML = '<p class="topic-empty">No requests yet — be the first!</p>';
+    return;
+  }
+
+  el.innerHTML = sorted.map(t => {
+    const isLive   = t.status === 'live' || liveNames.has(t.company_name.toLowerCase());
+    const isVoted  = _topicUserVotes.has(t.id);
+    const badge    = isLive
+      ? '<span class="topic-badge live">Live</span>'
+      : '<span class="topic-badge pending">Pending</span>';
+    return `
+      <div class="topic-card">
+        <div class="topic-card-left">
+          <div class="topic-card-name">${_esc(t.company_name)}</div>
+          ${badge}
+        </div>
+        <button class="topic-vote-btn ${isVoted ? 'voted' : ''}"
+                onclick="toggleTopicVote('${t.id}', this)" title="Upvote">
+          <svg viewBox="0 0 10 10"><path d="M5 1 L9 7 H1 Z"/></svg>
+          <span class="tv-count">${t.vote_count || 0}</span>
+        </button>
+      </div>`;
+  }).join('');
+}
+
+async function submitTopicRequest() {
+  const input = document.getElementById('topic-input');
+  const raw   = (input.value || '').trim();
+  if (!raw) { input.focus(); return; }
+  if (!_sb) { showToast('Not connected'); return; }
+
+  const normalized = raw.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+
+  // Check if already live in the feed
+  const liveNames = new Set((currentData?.leaderboard || []).map(d => (d.subject || '').toLowerCase()));
+  if (liveNames.has(normalized) || liveNames.has(raw.toLowerCase())) {
+    showToast(`${raw} is already tracked! Filter by it above.`);
+    input.value = '';
+    return;
+  }
+
+  // Check if already requested
+  const { data: existing } = await _sb.from('topic_requests')
+      .select('id').ilike('company_name', raw).limit(1);
+  if (existing && existing.length) {
+    showToast('Already requested — voting for it!');
+    input.value = '';
+    await toggleTopicVote(existing[0].id, null);
+    return;
+  }
+
+  const { error } = await _sb.from('topic_requests').insert({ company_name: raw, status: 'pending' });
+  if (error) { showToast('Could not submit: ' + error.message); return; }
+  showToast(`"${raw}" requested! We'll add it soon.`);
+  input.value = '';
+  await loadTopicRequests();
+}
+
+async function toggleTopicVote(topicId, btnEl) {
+  if (!_sb) return;
+  if (!currentUser) {
+    showToast('Sign in with Google to vote');
+    triggerSignIn();
+    return;
+  }
+
+  const isVoted = _topicUserVotes.has(topicId);
+  // Optimistic update
+  if (isVoted) {
+    _topicUserVotes.delete(topicId);
+  } else {
+    _topicUserVotes.add(topicId);
+  }
+  renderTopicRequests();
+
+  try {
+    if (isVoted) {
+      await _sb.from('topic_votes').delete().eq('topic_id', topicId).eq('user_id', currentUser.id);
+    } else {
+      await _sb.from('topic_votes').upsert(
+        { topic_id: topicId, user_id: currentUser.id },
+        { onConflict: 'topic_id,user_id', ignoreDuplicates: true }
+      );
+    }
+    await loadTopicRequests();
+  } catch(e) {
+    // Revert
+    if (isVoted) _topicUserVotes.add(topicId); else _topicUserVotes.delete(topicId);
+    renderTopicRequests();
+    showToast('Vote failed');
+  }
+}
+
+function _esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ── URL param handling ────────────────────────────────────
 function applyUrlParams() {
   const params = new URLSearchParams(window.location.search);
@@ -1676,6 +1929,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Init Supabase auth (loads session + vote counts after data is ready)
   await initAuth();
+  // Load topic requests (independent of auth)
+  loadTopicRequests();
 });
 
 // ── File loading (dev only, upload UI removed from public site) ───────────
@@ -2416,6 +2671,18 @@ async function saveSettings() {
   }
 }
 </script>
+
+<!-- Request a Company section -->
+<section class="request-section" id="request-section">
+  <h2>Don't see your product?</h2>
+  <p class="section-sub">Request any company or app. The most-voted get added next.</p>
+  <div class="request-input-row">
+    <input type="text" id="topic-input" placeholder="e.g. Airbnb, Chase, Robinhood…" maxlength="60"
+      onkeydown="if(event.key==='Enter')submitTopicRequest()">
+    <button onclick="submitTopicRequest()">Request</button>
+  </div>
+  <div id="topic-list" class="topic-grid"></div>
+</section>
 
 <!-- About section -->
 <section id="about" style="max-width:1200px;margin:60px auto 0;padding:0 40px;">
