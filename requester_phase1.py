@@ -727,7 +727,9 @@ def _make_demand_slug(subject, action):
 def extract_demands_with_ai(posts):
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        print("\n⚠  No ANTHROPIC_API_KEY in .env — add it to your .env file.\n")
+        print("\n⚠  No ANTHROPIC_API_KEY found.")
+        print("   Local: add it to your .env file")
+        print("   GitHub Actions: add it as a repo secret (Settings → Secrets → Actions)\n")
         return []
 
     client = anthropic.Anthropic(api_key=api_key)
