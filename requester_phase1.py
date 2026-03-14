@@ -735,9 +735,9 @@ def extract_demands_with_ai(posts):
     client = anthropic.Anthropic(api_key=api_key)
 
     # ── Batch processing ───────────────────────────────────────────────────────
-    # Split into batches of 60 so Claude can return complete JSON every time.
+    # Split into batches for Claude processing.
     # Results are merged and re-deduplicated by action slug afterward.
-    BATCH_SIZE = 60
+    BATCH_SIZE = 200
     batches = [posts[i:i+BATCH_SIZE] for i in range(0, len(posts), BATCH_SIZE)]
     print(f"  Splitting {len(posts)} items into {len(batches)} batches of up to {BATCH_SIZE}...")
 
