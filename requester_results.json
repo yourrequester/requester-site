@@ -46,7 +46,7 @@
     "Southwest Airlines boarding issues",
     "best airline app features missing"
   ],
-  "scraped_at": "2026-03-14T01:45:35.382031+00:00",
+  "scraped_at": "2026-03-14T02:00:39.926178+00:00",
   "posts_scanned": 0,
   "appstore_reviews": 1507,
   "googleplay_reviews": 1884,
@@ -37324,6 +37324,17 @@
       "_rating": 3,
       "selftext": "the Account section doesn't load when I tap on it. otherwise it's a good app for traveling with Alaska Airlines"
     },
+    "gp_6b8b1554-6fa8-460c-ae8c-678016047f2c": {
+      "title": "this Android app used to work but now it becomes unresponsiv\u2026",
+      "score": 20,
+      "created_utc": 1761136519.0,
+      "permalink": "https://play.google.com/store/apps/details?id=com.alaskaairlines.android",
+      "top_comments": [],
+      "_source": "googleplay",
+      "_subreddit": "googleplay",
+      "_rating": 2,
+      "selftext": "this Android app used to work but now it becomes unresponsive if I try to go to My Account.... quite annoying."
+    },
     "gp_7352cb7f-c474-4d60-8861-cd6d48a94308": {
       "title": "I tried to add bags, but there was no option, so I pressed c\u2026",
       "score": 30,
@@ -37345,17 +37356,6 @@
       "_subreddit": "googleplay",
       "_rating": 1,
       "selftext": "It literally doesn't work. \"We'll be just a moment\" sits there spinning for ever. Horrible app update"
-    },
-    "gp_5b7ab70b-2d54-49dc-b9b9-d9aa572318a2": {
-      "title": "No longer functions, cannot log in or get trip info/boarding\u2026",
-      "score": 30,
-      "created_utc": 1762982572.0,
-      "permalink": "https://play.google.com/store/apps/details?id=com.alaskaairlines.android",
-      "top_comments": [],
-      "_source": "googleplay",
-      "_subreddit": "googleplay",
-      "_rating": 1,
-      "selftext": "No longer functions, cannot log in or get trip info/boarding pass, no support/info from Alaska."
     },
     "tp_69b4360f07f7ef18b36cc169": {
       "title": "TERRIBLE SERVICE",
