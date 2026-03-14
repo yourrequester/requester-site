@@ -80,7 +80,7 @@
       "app_id": "529379082"
     }
   ],
-  "appstore_pages": 10,
+  "appstore_pages": 8,
   "appstore_min_rating": 3,
   "googleplay_apps": [
     {
@@ -132,7 +132,7 @@
       "app_id": "me.lyft.android"
     }
   ],
-  "googleplay_count": 300,
+  "googleplay_count": 200,
   "googleplay_max_rating": 3,
   "trustpilot_companies": [
     {
@@ -184,7 +184,7 @@
       "slug": "lyft.com"
     }
   ],
-  "trustpilot_pages": 6,
+  "trustpilot_pages": 4,
   "trustpilot_max_rating": 3,
   "steam_apps": [],
   "youtube_searches": [

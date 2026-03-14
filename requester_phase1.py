@@ -655,18 +655,17 @@ def build_post_summary(post):
         "_source": source,
     }
     if is_store:
-        summary["review_text"] = post.get("selftext", "")[:400]
+        summary["review_text"] = post.get("selftext", "")[:200]
         summary["star_rating"] = post.get("_rating", 1)
         summary["app"]         = post.get("_app_name", "")
     elif is_social:
-        summary["comment_text"] = post.get("selftext", "")[:400]
-        summary["platform"]     = source
+        summary["comment_text"] = post.get("selftext", "")[:200]
         summary["app"]          = post.get("_app_name", "")
         if post.get("_video_title"):
             summary["video_title"] = post["_video_title"]
     else:
-        summary["selftext"] = post.get("selftext", "")[:300]
-        summary["comments"] = comments_text[:8]
+        summary["selftext"] = post.get("selftext", "")[:200]
+        summary["comments"] = comments_text[:4]
     return summary
 
 
@@ -882,7 +881,7 @@ Group similar requests together. Categories: Bug Fix | Feature Request | Content
 Skip pure venting, general discussion, jokes, or questions seeking recommendations.
 
 Posts to analyze:
-{json.dumps(summaries, indent=2)}
+{json.dumps(summaries, separators=(',', ':'))}
 
 Return ONLY a JSON array. No markdown, no explanation.
 [
@@ -900,7 +899,7 @@ Return ONLY a JSON array. No markdown, no explanation.
         print(f"\n🤖 Batch {batch_num}/{total_batches} → Claude ({len(summaries)} items)...")
         message = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=16000,
+            max_tokens=8192,
             messages=[{"role": "user", "content": prompt}]
         )
         raw = message.content[0].text.strip()
@@ -1072,8 +1071,16 @@ def run():
     # External reviews are already low-rating (1-3★) complaints — no intent
     # filter needed. Applying one was dropping valid complaints that didn't
     # happen to contain magic keywords.
-    all_external = (appstore_reviews + googleplay_reviews + trustpilot_reviews
-                    + steam_reviews + youtube_comments)
+    # Cap reviews per source to control Claude API costs.
+    # Sort by lowest rating first (most actionable complaints at the front).
+    MAX_PER_SOURCE = 400
+    def _cap(lst):
+        lst_sorted = sorted(lst, key=lambda x: x.get("_rating", 3))
+        return lst_sorted[:MAX_PER_SOURCE]
+
+    all_external = (_cap(appstore_reviews) + _cap(googleplay_reviews)
+                    + _cap(trustpilot_reviews) + _cap(steam_reviews)
+                    + youtube_comments[:200])
 
     # Breakdown for logging
     def _count_src(lst, src): return sum(1 for r in lst if r.get("_source") == src)
