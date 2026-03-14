@@ -1,10 +1,2444 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=requester_dashboard.html">
-  <script>window.location.replace('requester_dashboard.html');</script>
-  <title>Requester</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Requester — What People Are Asking For</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Supabase config — safe to commit (anon key is public, protected by RLS) -->
+<script>
+  const SUPABASE_URL      = 'https://mlobhlxuugkjfbecchuk.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_gGD6urx9xqv3hwG6dEUc3w_jlN6hz_Z';
+  const IS_ADMIN = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --cream: #faf8f5;
+  --white: #ffffff;
+  --ink: #1a1814;
+  --ink-mid: #5a5650;
+  --ink-light: #9a9590;
+  --ink-faint: #e8e4de;
+  --accent: #d4500a;
+  --accent-light: #fdf0ea;
+  --green: #1a7a4a;
+  --green-light: #eaf5ef;
+  --blue: #1a4a8a;
+  --blue-light: #eaf0fa;
+  --gold: #b07d10;
+  --gold-light: #fdf6e3;
+  --red: #c0392b;
+  --red-light: #fdf0ee;
+  --shadow-sm: 0 1px 3px rgba(26,24,20,0.08);
+  --shadow-md: 0 4px 16px rgba(26,24,20,0.10);
+  --shadow-lg: 0 8px 32px rgba(26,24,20,0.12);
+  --radius: 12px;
+  --display: 'Playfair Display', Georgia, serif;
+  --body: 'DM Sans', system-ui, sans-serif;
+}
+
+/* ── Dark mode ── */
+body[data-theme="dark"] {
+  --cream: #111010;
+  --white: #1c1b19;
+  --ink: #f0ece6;
+  --ink-mid: #b0a89e;
+  --ink-light: #6e6860;
+  --ink-faint: #2e2c28;
+  --accent-light: #2a1a0e;
+  --green-light: #0e2318;
+  --blue-light: #0e1828;
+  --gold-light: #1e1808;
+  --red-light: #200e0e;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+body[data-theme="dark"] .request-card {
+  box-shadow: none;
+  border: 1px solid #333;
+}
+body[data-theme="dark"] .request-card:hover {
+  border-color: #555;
+  box-shadow: none;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--body);
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background .2s, color .2s;
+}
+
+/* ── Header ── */
+header {
+  background: var(--white);
+  border-bottom: 1px solid var(--ink-faint);
+  padding: 0 40px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--display);
+}
+
+.logo-name {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.logo-tagline {
+  font-size: 12px;
+  color: var(--ink-light);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-mid);
+  background: var(--cream);
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ink-faint);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-light);
+}
+
+.status-dot.live {
+  background: var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(26,122,74,0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(26,122,74,0); }
+}
+
+.meta-text {
+  font-size: 12px;
+  color: var(--ink-light);
+}
+
+/* ── Hero band ── */
+.hero {
+  background: var(--white);
+  border-bottom: 1px solid var(--ink-faint);
+  padding: 40px 40px 32px;
+}
+
+.hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.hero-text h1 {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.hero-text p {
+  font-size: 15px;
+  color: var(--ink-mid);
+  font-weight: 400;
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+.hero-stats {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid var(--ink-faint);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.hero-stat {
+  text-align: center;
+  padding: 14px 24px;
+}
+
+.hero-stat + .hero-stat {
+  border-left: 1px solid var(--ink-faint);
+}
+
+.hero-stat-val {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.hero-stat-label {
+  font-size: 11px;
+  color: var(--ink-light);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+/* ── Upload ── */
+.upload-section {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 40px;
+}
+
+.upload-card {
+  background: var(--white);
+  border: 2px dashed var(--ink-faint);
+  border-radius: var(--radius);
+  padding: 48px 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-card:hover, .upload-card.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.upload-card input { display: none; }
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--accent-light);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 22px;
+}
+
+.upload-title {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.upload-sub {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.6;
+}
+
+.upload-sub span {
+  color: var(--accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.upload-sub span:hover { text-decoration: underline; }
+
+/* ── Main layout ── */
+.main-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px 60px;
+  display: none;
+}
+
+.main-layout.visible { display: block; }
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-light);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--white);
+  border: 1px solid var(--ink-faint);
+  border-radius: 8px;
+  padding: 9px 14px 9px 38px;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212,80,10,0.1);
+}
+
+.search-input::placeholder { color: var(--ink-light); }
+
+.filter-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--ink-faint);
+  background: var(--white);
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  box-shadow: 0 2px 8px rgba(212,80,10,0.25);
+}
+
+.source-pill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--ink-faint);
+  background: var(--white);
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.source-pill:hover { border-color: var(--accent); color: var(--accent); }
+.source-pill.active {
+  background: var(--accent-light);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+body[data-theme="dark"] .source-pill { background: var(--white); }
+
+.result-count {
+  font-size: 13px;
+  color: var(--ink-light);
+  white-space: nowrap;
+}
+
+/* ── Two-col layout ── */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── Request cards ── */
+.request-list { display: flex; flex-direction: column; gap: 12px; }
+
+.request-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-faint);
+  padding: 24px 28px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 24px rgba(26,24,20,0.07);
+  animation: card-in 0.35s ease both;
+  position: relative;
+  overflow: hidden;
+}
+
+.request-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.request-card:hover {
+  border-color: #d4d0ca;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.request-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(212,80,10,0.12), var(--shadow-md);
+}
+
+.request-card.selected::before { background: var(--accent); }
+
+.request-card:nth-child(1) { animation-delay: 0.04s; }
+.request-card:nth-child(2) { animation-delay: 0.08s; }
+.request-card:nth-child(3) { animation-delay: 0.12s; }
+.request-card:nth-child(4) { animation-delay: 0.16s; }
+.request-card:nth-child(5) { animation-delay: 0.20s; }
+.request-card:nth-child(6) { animation-delay: 0.24s; }
+.request-card:nth-child(7) { animation-delay: 0.28s; }
+.request-card:nth-child(8) { animation-delay: 0.32s; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes confetti-fly {
+  0%   { transform: translate(0,0) scale(1) rotate(0deg); opacity:1; }
+  100% { transform: translate(var(--tx),var(--ty)) scale(0.15) rotate(var(--rot)); opacity:0; }
+}
+@keyframes vote-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.32); }
+  100% { transform: scale(1); }
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.card-left { flex: 1; min-width: 0; }
+
+.card-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.card-rank {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-light);
+  letter-spacing: 0.04em;
+  min-width: 20px;
+}
+
+.card-rank.top { color: var(--accent); }
+
+.card-subject {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.card-action {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.card-summary {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.gravity-score {
+  font-family: 'SF Mono','Consolas','Monaco',monospace;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.gravity-label {
+  font-size: 8pt;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+  margin-top: 3px;
+}
+
+.card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink-faint);
+}
+
+.card-tags { display: flex; gap: 6px; align-items: center; }
+
+.tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.tag-bug      { background: rgba(192,57,43,0.10);   color: var(--red); }
+.tag-feature  { background: rgba(26,74,138,0.10);   color: var(--blue); }
+.tag-content  { background: rgba(26,122,74,0.10);   color: var(--green); }
+.tag-ui       { background: rgba(107,63,160,0.10);  color: #6b3fa0; }
+.tag-policy   { background: rgba(176,125,16,0.10);  color: var(--gold); }
+.tag-other    { background: rgba(154,149,144,0.10); color: var(--ink-mid); }
+/* Tag as clickable button */
+.tag { border: none; cursor: pointer; font-family: inherit; }
+.tag:hover { filter: brightness(0.9); }
+.tag.tag-active { outline: 2px solid currentColor; outline-offset: 1px; }
+
+.thread-count {
+  font-size: 12px;
+  color: var(--ink-light);
+}
+
+/* ── Signal bar chart ── */
+.signal-chart { padding: 12px 16px 4px; }
+.signal-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.signal-bar-label { font-size: 11px; color: var(--ink-mid); width: 70px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signal-bar-track { flex: 1; height: 6px; background: var(--ink-faint); border-radius: 3px; overflow: hidden; }
+.signal-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s ease; }
+.signal-bar-count { font-size: 10px; color: var(--ink-light); width: 28px; text-align: right; flex-shrink: 0; }
+
+/* ── Sparkline trend chart ── */
+.trend-wrap { margin-top: 16px; }
+.trend-label { font-size: 11px; font-weight: 600; color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.trend-svg { width: 100%; height: 48px; }
+.trend-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.trend-area { fill: var(--accent-light); }
+.trend-dot  { fill: var(--accent); }
+.trend-dates { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-light); margin-top: 4px; }
+.trend-empty { font-size: 12px; color: var(--ink-light); font-style: italic; padding: 8px 0; }
+
+/* ── Platform icons ── */
+.platform-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 12px; color: var(--ink-mid); }
+.platform-row + .platform-row { border-top: 1px solid var(--ink-faint); }
+.platform-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.platform-count { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--ink); font-family: 'SF Mono','Consolas',monospace; }
+
+/* ── Right sidebar ── */
+.sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+.widget {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-faint);
+  box-shadow: var(--shadow-sm);
+}
+
+.widget-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--ink-faint);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.widget-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.widget-body { padding: 20px; }
+
+/* Detail widget scrollable body */
+#detail-body {
+  overflow-x: hidden;
+}
+
+/* Detail widget */
+.detail-placeholder {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--ink-light);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.detail-placeholder-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  opacity: 0.4;
+}
+
+.detail-subject {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 4px;
+}
+
+.detail-action {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.detail-summary {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.65;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+.detail-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+.detail-score-num {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.detail-score-label {
+  font-size: 11px;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.threads-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+
+.thread-card {
+  border: 1px solid var(--ink-faint);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  display: block;
+}
+
+.thread-card:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.thread-title {
+  font-size: 12px;
+  color: var(--ink);
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.thread-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--ink-light);
+}
+
+.thread-upvotes { color: var(--green); font-weight: 500; }
+
+/* Comment preview */
+.comment-preview {
+  background: var(--cream);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-mid);
+  line-height: 1.5;
+  font-style: italic;
+}
+.expand-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 2px;
+  margin-left: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+}
+.expand-btn:hover { color: var(--ink); }
+.expand-ellipsis { color: var(--ink-light); }
+
+
+/* Stats bar */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--ink-faint);
+}
+
+.stat-box {
+  background: var(--white);
+  padding: 16px 20px;
+}
+
+.stat-val {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.stat-lbl {
+  font-size: 11px;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+/* Category breakdown */
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cat-name {
+  font-size: 12px;
+  color: var(--ink-mid);
+  width: 100px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.cat-track {
+  flex: 1;
+  height: 6px;
+  background: var(--ink-faint);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cat-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.cat-num {
+  font-size: 12px;
+  color: var(--ink-light);
+  width: 20px;
+  text-align: right;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--cream);
+  border: 1px solid var(--ink-faint);
+  color: var(--ink-light);
+}
+.source-badge.appstore    { background: #eaf4ff; border-color: #b8d9f5; color: #1a5fa0; }
+.source-badge.googleplay { background: #e6f4f0; border-color: #9fd4c4; color: #01875f; }
+.source-badge.trustpilot  { background: #fff8e1; color: #e65100; border: 1px solid #ffcc80; }
+.source-badge.steam       { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+.source-badge.youtube     { background: #fce4ec; color: #c62828; border: 1px solid #f48fb1; }
+.source-badge.reddit   { background: #fff2ea; border-color: #f5cdb8; color: #c04a10; }
+
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-light);
+}
+
+.no-results-title {
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--ink-mid);
+  margin-bottom: 6px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .content-grid { grid-template-columns: 1fr; }
+  .hero-stats { display: none; }
+  .hero-text h1 { font-size: 26px; }
+  header, .hero, .upload-section, .main-layout { padding-left: 20px; padding-right: 20px; }
+}
+
+/* ── Upvote button ── */
+.upvote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--white);
+  border: 1px solid var(--ink-faint);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.upvote-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+.upvote-btn.voted {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.upvote-btn.voted:hover {
+  background: #b84008;
+  border-color: #b84008;
+  color: white;
+}
+.upvote-btn-lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--white);
+  border: 1.5px solid var(--ink-faint);
+  border-radius: 999px;
+  padding: 7px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.15s;
+}
+.upvote-btn-lg:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+.upvote-btn-lg.voted {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ── Auth area in header ── */
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.auth-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--ink-faint);
+}
+.auth-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-signout {
+  font-size: 11px;
+  color: var(--ink-light);
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font-family: var(--body);
+  padding: 0;
+}
+.auth-signout:hover { color: var(--accent); }
+.google-signin-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--ink-faint); background: var(--white);
+  color: var(--ink); font-family: inherit; font-size: 13px;
+  font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, box-shadow .15s;
+}
+.google-signin-btn:hover { border-color: var(--ink-mid); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.dark-toggle {
+  background: none; border: 1px solid var(--ink-faint); border-radius: 999px;
+  width: 32px; height: 32px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+}
+.dark-toggle:hover { border-color: var(--ink-mid); }
+.sign-in-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--white);
+  border: 1px solid var(--ink-faint);
+  border-radius: 8px;
+  padding: 6px 13px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--body);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s;
+}
+.sign-in-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Share button & toast ── */
+.share-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--ink-light);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--body);
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.share-btn:hover { color: var(--accent); }
+#toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 20px;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s;
+  z-index: 9999;
+  white-space: nowrap;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
 </head>
-<body></body>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">R</div>
+    <span class="logo-name">Requester</span>
+  </div>
+  <div class="header-right">
+    <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
+    <!-- Auth area -->
+    <div class="auth-area" id="auth-area">
+      <button id="google-signin-btn" class="google-signin-btn" onclick="triggerSignIn()">
+        <svg width="16" height="16" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Sign in with Google
+      </button>
+      <div id="user-info" style="display:none;align-items:center;gap:8px;">
+        <img class="auth-avatar" id="user-avatar" src="" alt="">
+        <span class="auth-name" id="user-name"></span>
+        <button class="auth-signout" onclick="signOut()">sign out</button>
+      </div>
+    </div>
+    <!-- Settings hidden from public — only visible when IS_ADMIN is true -->
+    <button id="settings-btn" onclick="openSettings()" style="display:none;background:none;border:1px solid var(--ink-faint);color:var(--ink);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;align-items:center;gap:5px;font-family:inherit;">
+      ⚙️ Settings
+    </button>
+  </div>
+</header>
+<div id="toast"></div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1 id="hero-title">What are people asking for?</h1>
+      <p id="hero-sub" style="display:none;"></p>
+    </div>
+    <div class="hero-stats" id="hero-stats" style="display:none;">
+      <div class="hero-stat">
+        <div class="hero-stat-val" id="hs-requests">—</div>
+        <div class="hero-stat-label" id="hs-requests-label">Requests Found</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val" id="hs-companies">—</div>
+        <div class="hero-stat-label" id="hs-companies-label">Products Tracked</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading / error state (shown only if data fetch fails) -->
+<div id="loading-state" style="display:none;text-align:center;padding:80px 20px;color:var(--ink-mid);font-size:15px;">
+  <div style="font-size:32px;margin-bottom:16px;">⏳</div>
+  <div style="font-weight:500;margin-bottom:8px;">Data is being refreshed</div>
+  <div style="font-size:13px;">Check back shortly — results update automatically every few hours.</div>
+</div>
+
+<!-- Main content (hidden until data loaded) -->
+<div class="main-layout" id="main-layout">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" id="search-input" placeholder="Search requests, companies, topics…">
+    </div>
+    <div id="filter-pills" style="display:none;"></div>
+    <span class="result-count" id="result-count"></span>
+  </div>
+  <!-- Source filter row — populated dynamically -->
+  <div class="source-filter-row" id="source-filter-row" style="display:none;margin-bottom:16px;gap:8px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:11px;color:var(--ink-light);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;">Company</span>
+    <div id="source-pills" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
+
+  <!-- Grid -->
+  <div class="content-grid">
+    <div class="request-list" id="request-list"></div>
+
+    <div class="sidebar" style="position:sticky;top:80px;max-height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;">
+
+      <!-- Request volume by platform -->
+      <div class="widget" id="platforms-widget" style="display:none;">
+        <div class="widget-head"><span class="widget-title">Request Volume</span></div>
+        <div id="platforms-body"></div>
+      </div>
+
+      <!-- Request detail -->
+      <div class="widget" id="detail-widget">
+        <div class="widget-head">
+          <span class="widget-title">Request Detail</span>
+          <span id="detail-rank" style="font-size:12px;color:var(--ink-light);"></span>
+        </div>
+        <div class="widget-body" id="detail-body">
+          <div class="detail-placeholder" style="text-align:center;padding:32px 20px;">
+            <div style="font-size:52px;opacity:0.12;line-height:1;margin-bottom:14px;">◎</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink-mid);margin-bottom:4px;">Nothing selected</div>
+            <div style="font-size:12px;color:var(--ink-light);line-height:1.5;">Click any request card<br>to explore its details.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="widget" id="cat-widget" style="display:none;">
+        <div class="widget-head"><span class="widget-title">By Category</span></div>
+        <div class="widget-body" id="cat-body"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings Panel ─────────────────────────────────────────────────── -->
+<div id="settings-overlay" onclick="closeSettings()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;"></div>
+<div id="settings-panel" style="display:none;position:fixed;top:0;right:0;bottom:0;width:480px;max-width:95vw;background:var(--surface);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;padding:32px;box-shadow:-4px 0 24px rgba(0,0,0,0.12);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+    <h2 style="margin:0;font-size:18px;">⚙️ Scraper Settings</h2>
+    <button onclick="closeSettings()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-light);">✕</button>
+  </div>
+
+  <p style="font-size:13px;color:var(--ink-light);margin-bottom:20px;line-height:1.5;">
+    Changes save to <code>requester_config.json</code>. They take effect on the next scrape run.
+  </p>
+
+  <!-- Subreddits -->
+  <div class="settings-section">
+    <div class="settings-label">Reddit Communities</div>
+    <div class="settings-hint">Subreddit names only (no r/ prefix). One per row.</div>
+    <div id="sub-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+    <button class="settings-add-btn" onclick="addSubreddit()">+ Add Subreddit</button>
+  </div>
+
+  <!-- App Store Apps -->
+  <div class="settings-section">
+    <div class="settings-label">App Store Apps</div>
+    <div class="settings-hint">Find the ID in the App Store URL: <code>apps.apple.com/us/app/name/id<strong>XXXXXX</strong></code></div>
+    <div id="as-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+    <button class="settings-add-btn" onclick="addAppStoreApp()">+ Add App Store App</button>
+  </div>
+
+  <!-- Google Play Apps -->
+  <div class="settings-section">
+    <div class="settings-label">Google Play Apps</div>
+    <div class="settings-hint">Find the ID in the Play Store URL: <code>play.google.com/store/apps/details?id=<strong>com.example.app</strong></code></div>
+    <div id="gp-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+    <button class="settings-add-btn" onclick="addGooglePlayApp()">+ Add Google Play App</button>
+  </div>
+
+  <!-- Advanced Settings -->
+  <div class="settings-section">
+    <div class="settings-label">Advanced</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label class="settings-hint" style="display:block;margin-bottom:4px;">Posts per subreddit</label>
+        <input id="cfg-post-limit" type="number" min="10" max="100" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--ink);font-family:inherit;">
+      </div>
+      <div>
+        <label class="settings-hint" style="display:block;margin-bottom:4px;">Max comments per post</label>
+        <input id="cfg-max-comments" type="number" min="5" max="50" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--ink);font-family:inherit;">
+      </div>
+      <div>
+        <label class="settings-hint" style="display:block;margin-bottom:4px;">App Store review pages</label>
+        <input id="cfg-as-pages" type="number" min="1" max="10" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--ink);font-family:inherit;">
+      </div>
+      <div>
+        <label class="settings-hint" style="display:block;margin-bottom:4px;">Google Play review count</label>
+        <input id="cfg-gp-count" type="number" min="50" max="500" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--ink);font-family:inherit;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Save -->
+  <div style="display:flex;gap:10px;margin-top:24px;">
+    <button onclick="saveSettings()" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
+      💾 Save Config
+    </button>
+    <button onclick="closeSettings()" style="background:none;border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:12px 20px;font-size:14px;cursor:pointer;font-family:inherit;">
+      Cancel
+    </button>
+  </div>
+  <div id="settings-status" style="margin-top:12px;font-size:13px;text-align:center;min-height:20px;"></div>
+</div>
+
+<style>
+.settings-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.settings-hint {
+  font-size: 12px;
+  color: var(--ink-light);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.settings-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.settings-row input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+}
+.settings-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.settings-row .del-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--ink-light);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.settings-row .del-btn:hover { border-color: #c0392b; color: #c0392b; }
+.settings-add-btn {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--ink-light);
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+}
+.settings-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+
+<script>
+let allRequests = [], postLookup = {}, currentData = {};
+let activeFilter = 'all', activeSearch = '', selectedId = -1;
+let activeSources = new Set();
+let historyData = null; // { snapshots: [ { ts, scores: { slug: score } } ] }
+
+// Generate a stable slug from subject + action (mirrors Python _make_demand_slug)
+function _clientSlug(subject, action) {
+  return ((subject||'') + '-' + (action||'')).toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+}
+
+const catClass = { 'Bug Fix':'tag-bug','Feature Request':'tag-feature','Content Request':'tag-content','UI/UX':'tag-ui','Policy Change':'tag-policy','Other':'tag-other' };
+const catColor  = { 'Bug Fix':'#c0392b','Feature Request':'#1a4a8a','Content Request':'#1a7a4a','UI/UX':'#6b3fa0','Policy Change':'#b07d10','Other':'#9a9590' };
+
+// ── Auth + Votes via Supabase ─────────────────────────────
+let _sb         = null;   // supabase client
+let currentUser = null;   // { id, name, email, picture }
+let _pendingVoteSlug = null;
+
+async function initAuth() {
+  if (!SUPABASE_URL || SUPABASE_URL.includes('YOUR_SUPABASE')) return;
+  _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Restore session (handles post-OAuth redirect automatically)
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) _applySession(session);
+
+  // Keep in sync with auth changes (sign in / sign out)
+  _sb.auth.onAuthStateChange(async (_event, session) => {
+    if (session) {
+      _applySession(session);
+      await loadVoteCounts();
+      if (_pendingVoteSlug) {
+        const slug = _pendingVoteSlug;
+        _pendingVoteSlug = null;
+        _doVote(slug, null);
+      }
+    } else {
+      currentUser = null;
+      updateAuthUI();
+      render();
+    }
+  });
+
+  await loadVoteCounts();
+}
+
+function _applySession(session) {
+  const m = session.user.user_metadata || {};
+  currentUser = {
+    id:      session.user.id,
+    name:    m.full_name || m.name || session.user.email,
+    email:   session.user.email,
+    picture: m.avatar_url || m.picture || '',
+  };
+  updateAuthUI();
+  render();
+}
+
+function triggerSignIn() {
+  if (!_sb) { showToast('Auth not configured — add Supabase keys'); return; }
+  _sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://requester.org/requester_dashboard.html' },
+  });
+}
+
+function signOut() {
+  if (_sb) _sb.auth.signOut();
+}
+
+function updateAuthUI() {
+  const signinBtn = document.getElementById('google-signin-btn');
+  const userInfo  = document.getElementById('user-info');
+  if (!userInfo) return;
+  if (currentUser) {
+    if (signinBtn) signinBtn.style.display = 'none';
+    userInfo.style.display = 'flex';
+    document.getElementById('user-name').textContent = currentUser.name || currentUser.email || 'Signed in';
+    const avatarEl = document.getElementById('user-avatar');
+    if (currentUser.picture) { avatarEl.src = currentUser.picture; avatarEl.style.display = ''; }
+    else avatarEl.style.display = 'none';
+  } else {
+    if (signinBtn) signinBtn.style.display = '';
+    userInfo.style.display = 'none';
+  }
+}
+
+async function loadVoteCounts() {
+  if (!_sb || !allRequests.length) return;
+
+  // Use client-side slug as fallback so every demand gets a stable key
+  const slugs = allRequests.map(d => d.slug || _clientSlug(d.subject, d.action)).filter(Boolean);
+  if (!slugs.length) return;
+
+  // Public SELECT — reads all votes regardless of auth state.
+  // (Requires Supabase RLS policy: FOR SELECT USING (true))
+  const { data: rows } = await _sb.from('votes')
+      .select('demand_slug, user_id').in('demand_slug', slugs);
+  if (!rows) return;
+
+  const counts    = {};
+  const userVotes = new Set();
+  rows.forEach(r => {
+    counts[r.demand_slug] = (counts[r.demand_slug] || 0) + 1;
+    if (currentUser && r.user_id === currentUser.id) userVotes.add(r.demand_slug);
+  });
+
+  allRequests.forEach(d => {
+    const slug = d.slug || _clientSlug(d.subject, d.action);
+    d.vote_count = counts[slug] || 0;
+    d.user_voted = userVotes.has(slug) || false;
+  });
+  render();
+}
+
+// ── Voting ────────────────────────────────────────────────
+async function toggleVote(slug, event, btnEl) {
+  if (event) event.stopPropagation();
+  if (!slug) {
+    // Fallback: generate slug from the demand's subject+action
+    const card = btnEl?.closest('[data-id]');
+    const id   = card ? parseInt(card.dataset.id) : -1;
+    const demand = allRequests.find(x => x._id === id);
+    if (demand) slug = demand.slug || _clientSlug(demand.subject, demand.action);
+  }
+  if (!slug) { showToast('Cannot vote on this item'); return; }
+  if (!currentUser) {
+    _pendingVoteSlug = slug;
+    showToast('Sign in with Google to upvote');
+    triggerSignIn();
+    return;
+  }
+  _doVote(slug, btnEl);
+}
+
+async function _doVote(slug, btnEl) {
+  const allBtns = [...document.querySelectorAll(`[data-slug="${slug}"]`)];
+  if (btnEl && !allBtns.includes(btnEl)) allBtns.push(btnEl);
+
+  // Use demand object as truth source (not button class) to prevent double-fire bugs
+  const demand   = allRequests.find(d => (d.slug || _clientSlug(d.subject, d.action)) === slug);
+  const isVoted  = demand ? demand.user_voted : allBtns.some(b => b.classList.contains('voted'));
+  const newVoted = !isVoted;
+
+  // Optimistic UI + pop animation
+  allBtns.forEach(b => {
+    b.classList.toggle('voted', newVoted);
+    b.style.animation = 'none';
+    requestAnimationFrame(() => { b.style.animation = 'vote-pop 0.3s ease'; });
+    const countEl = b.querySelector('.vote-count');
+    if (countEl) {
+      const cur = parseInt(countEl.textContent) || 0;
+      countEl.textContent = newVoted ? cur + 1 : Math.max(0, cur - 1);
+    }
+  });
+  // Update detail panel count
+  const detailCount = document.getElementById('detail-vote-count');
+  if (detailCount) {
+    const cur = parseInt(detailCount.textContent) || 0;
+    detailCount.textContent = newVoted ? cur + 1 : Math.max(0, cur - 1);
+  }
+
+  // Confetti on upvote
+  if (newVoted && btnEl) _launchConfetti(btnEl);
+
+  try {
+    let error;
+    if (newVoted) {
+      // upsert instead of insert — silently wins if row already exists (no duplicate key error)
+      ({ error } = await _sb.from('votes').upsert(
+        { demand_slug: slug, user_id: currentUser.id },
+        { onConflict: 'demand_slug,user_id', ignoreDuplicates: true }
+      ));
+    } else {
+      ({ error } = await _sb.from('votes').delete()
+          .eq('demand_slug', slug).eq('user_id', currentUser.id));
+    }
+    if (error) throw new Error(error.message);
+
+    // Sync real count from DB
+    const { count } = await _sb.from('votes')
+        .select('*', { count: 'exact', head: true }).eq('demand_slug', slug);
+    const realCount = count || 0;
+    allBtns.forEach(b => {
+      const ce = b.querySelector('.vote-count');
+      if (ce) ce.textContent = realCount;
+    });
+    if (detailCount) detailCount.textContent = realCount;
+    if (demand) { demand.user_voted = newVoted; demand.vote_count = realCount; }
+
+  } catch(e) {
+    // Revert optimistic UI
+    allBtns.forEach(b => {
+      b.classList.toggle('voted', isVoted);
+      const ce = b.querySelector('.vote-count');
+      if (ce) {
+        const cur = parseInt(ce.textContent) || 0;
+        ce.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
+      }
+    });
+    if (detailCount) {
+      const cur = parseInt(detailCount.textContent) || 0;
+      detailCount.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
+    }
+    showToast('Vote failed: ' + e.message);
+  }
+}
+
+// ── Confetti burst ─────────────────────────────────────────
+function _launchConfetti(btnEl) {
+  const rect   = btnEl.getBoundingClientRect();
+  const cx     = rect.left + rect.width  / 2;
+  const cy     = rect.top  + rect.height / 2;
+  const colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#e67e22','#1abc9c'];
+  const shapes = ['50%','3px','0'];  // circle, rect, triangle-ish
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    const angle  = (Math.PI * 2 * i / 14) + (Math.random() - 0.5) * 0.6;
+    const dist   = 42 + Math.random() * 48;
+    const size   = 6 + Math.random() * 5;
+    el.style.cssText = `
+      position:fixed; left:${cx}px; top:${cy}px;
+      width:${size}px; height:${size}px;
+      border-radius:${shapes[i % shapes.length]};
+      background:${colors[i % colors.length]};
+      pointer-events:none; z-index:9999;
+      --tx:${(Math.cos(angle)*dist).toFixed(1)}px;
+      --ty:${(Math.sin(angle)*dist - 30).toFixed(1)}px;
+      --rot:${Math.round(Math.random()*360)}deg;
+      animation:confetti-fly 0.65s ease-out forwards;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 700);
+  }
+}
+
+// ── URL param handling ────────────────────────────────────
+function applyUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+
+  // ?slug=... → find matching demand and open it
+  const slug = params.get('slug');
+  if (slug) {
+    setTimeout(() => {
+      const demand = allRequests.find(d =>
+        (d.slug || _clientSlug(d.subject, d.action)) === slug
+      );
+      if (demand) selectRequest(demand._id);
+    }, 150);
+    return; // don't also apply subject filter when linking to a specific item
+  }
+
+  // ?subject=... / ?company=... → filter by company name
+  const subject = params.get('subject') || params.get('company');
+  if (subject) {
+    activeSearch = subject;
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.value = subject;
+    render();
+  }
+}
+
+// ── Share button — deep-links to the specific demand ─────
+function shareSubject(slug, event) {
+  if (event) event.stopPropagation();
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.searchParams.set('slug', slug);
+  navigator.clipboard.writeText(url.toString()).then(() => {
+    showToast('Link copied!');
+  }).catch(() => {
+    showToast(url.toString());
+  });
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let _toastTimer = null;
+function toggleDark() {
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  document.body.setAttribute('data-theme', isDark ? '' : 'dark');
+  document.getElementById('dark-toggle').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('requester_theme', isDark ? 'light' : 'dark');
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── Auto-load: static JSON (production) or local server (dev) ────────────
+async function tryAutoLoad() {
+  // Try static JSON first (GitHub Pages production)
+  try {
+    const res = await fetch('./requester_results.json', { signal: AbortSignal.timeout(4000) });
+    if (res.ok) {
+      const data = await res.json();
+      if (!data.error) { currentData = data; ingestData(data); return true; }
+    }
+  } catch(e) { /* fall through to dev server */ }
+
+  // Fallback: local dev server
+  try {
+    const res = await fetch('/api/latest', { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (data.error) return false;
+    currentData = data;
+    ingestData(data);
+    if (data._source === 'db' && data.db_stats) showDbStats(data.db_stats);
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+function showDbStats(stats) {
+  const bar = document.createElement('div');
+  bar.style.cssText = 'background:var(--ink);color:#fff;font-size:12px;padding:7px 40px;display:flex;gap:24px;align-items:center;';
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+  const lastRun = stats.last_run_at ? new Date(stats.last_run_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
+  bar.innerHTML = `
+    <span style="opacity:.5;font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:10px;">DB</span>
+    <span><strong>${fmt(stats.total_posts)}</strong> posts stored</span>
+    <span><strong>${fmt(stats.total_demands)}</strong> unique demands</span>
+    <span><strong>${stats.total_runs}</strong> runs</span>
+    <span style="margin-left:auto;opacity:.6;">Last run: ${lastRun}</span>
+  `;
+  document.querySelector('header').after(bar);
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  // Show settings button only for admin
+  if (IS_ADMIN) {
+    const btn = document.getElementById('settings-btn');
+    if (btn) btn.style.display = 'flex';
+  }
+
+  // Dark mode: respect system preference, allow manual override
+  const savedTheme = localStorage.getItem('requester_theme');
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const useDark    = savedTheme ? savedTheme === 'dark' : systemDark;
+  if (useDark) {
+    document.body.setAttribute('data-theme', 'dark');
+    const btn = document.getElementById('dark-toggle');
+    if (btn) btn.textContent = '☀️';
+  }
+  // Follow system changes if user hasn't manually set a preference
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('requester_theme')) {
+      document.body.setAttribute('data-theme', e.matches ? 'dark' : '');
+      const btn = document.getElementById('dark-toggle');
+      if (btn) btn.textContent = e.matches ? '☀️' : '🌙';
+    }
+  });
+
+  const loaded = await tryAutoLoad();
+  if (!loaded) document.getElementById('loading-state').style.display = '';
+  if (loaded) applyUrlParams();
+
+  // Load history data for trend sparklines (non-blocking)
+  try {
+    const hres = await fetch('./requester_history.json', { signal: AbortSignal.timeout(3000) });
+    if (hres.ok) historyData = await hres.json();
+  } catch(e) { /* no history yet — sparklines will show "not enough data" */ }
+
+  // Init Supabase auth (loads session + vote counts after data is ready)
+  await initAuth();
+});
+
+// ── File loading (dev only, upload UI removed from public site) ───────────
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      ingestData(JSON.parse(e.target.result));
+    } catch(err) {
+      alert('Could not parse this file. Make sure it\'s a valid requester_results.json');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function ingestData(data) {
+  // Build subject normalization map from app names in config
+  const subjectNorm = {};
+  const allAppNames = [
+    ...(data.appstore_apps || []),
+    ...(data.googleplay_apps || []),
+  ].map(n => typeof n === 'string' ? n : n.name || '').filter(Boolean);
+
+  // For each known app name, build variants that Claude might write
+  allAppNames.forEach(name => {
+    const key = name.toLowerCase();
+    // Variants: "Delta App", "Delta Airlines App", "Delta Air Lines", etc.
+    const variants = [
+      key, key + ' app', key + ' airlines', key + ' airlines app',
+      key + ' air lines', key + ' air lines app', key + ' airline',
+      key + ' airways', key + ' airways app',
+    ];
+    variants.forEach(v => { subjectNorm[v] = name; });
+  });
+
+  // Map subreddit name → canonical airline name for filter fallback
+  const subToSubject = {};
+  (data.subreddits || []).forEach(sub => {
+    const clean = cleanSub(sub).toLowerCase();
+    // Match subreddit to app name: find app whose name appears in subreddit or vice versa
+    allAppNames.forEach(name => {
+      const nameLower = name.toLowerCase();
+      if (clean.includes(nameLower) || nameLower.includes(clean.replace('airlines','').replace('airline','').trim())) {
+        subToSubject[clean] = name;
+      }
+    });
+  });
+
+  function normalizeSubject(s) {
+    if (!s) return s;
+    const lower = s.toLowerCase().trim();
+    return subjectNorm[lower] || s;
+  }
+
+  allRequests = (data.leaderboard || []).map((d,i) => ({
+    ...d,
+    _id: i,
+    gravity_score: d.gravity_score || 0,
+    subject: normalizeSubject(d.subject),
+  }));
+  postLookup = data.post_lookup || {};
+
+  // (status indicators removed — data always shown)
+
+  // Hero
+  const subs = (data.subreddits || (data.subreddit ? [data.subreddit] : [])).map(s => s.replace(/^\/?r\//i,''));
+  const apps     = data.appstore_apps    || [];
+  const gpapps   = data.googleplay_apps  || [];
+  const tpcos  = data.trustpilot_companies || [];
+  const steam  = data.steam_apps    || [];
+  const ytq    = data.youtube_searches || [];
+  const allSources = [
+    ...subs.map(s=>`r/${s}`),
+    ...apps.map(a=>`${a} App Store`),
+    ...gpapps.map(a=>`${a} Google Play`),
+    ...(tpcos.length ? ['Trustpilot'] : []),
+    ...(steam.length ? ['Steam'] : []),
+    ...(ytq.length   ? ['YouTube']   : []),
+  ];
+
+  // Smart hero: figure out if there's a unifying subject
+  // Check if all companies tagged point to the same entity
+  const companies = [...new Set(allRequests.map(r => r.subject).filter(Boolean))];
+  const appNames = apps.map(a => a.toLowerCase());
+  const subNames = subs.map(s => s.toLowerCase());
+
+  // Detect if sources are thematically unified around one company
+  const singleCompany = apps.length === 1 && subs.every(s =>
+    s.toLowerCase().includes(apps[0].toLowerCase()) ||
+    apps[0].toLowerCase().includes(s.toLowerCase())
+  );
+
+  // Build hero title
+  let heroTitle;
+  if (singleCompany) {
+    heroTitle = `What people are requesting from ${apps[0]}`;
+  } else if (allSources.length === 1) {
+    heroTitle = `What ${allSources[0]} is requesting`;
+  } else if (allSources.length <= 3) {
+    // Show all if they fit — user's screen is wide enough for 3
+    const sourceStr = allSources.slice(0,-1).join(', ') + ' & ' + allSources.slice(-1);
+    heroTitle = `Top requests from ${sourceStr}`;
+  } else {
+    // Too many to list — find a unifying theme or use generic
+    const uniqueCompanies = [...new Set(allRequests.map(r=>r.subject).filter(Boolean))];
+    if (uniqueCompanies.length === 1) {
+      heroTitle = `What people are requesting from ${uniqueCompanies[0]}`;
+    } else if (uniqueCompanies.length <= 3) {
+      heroTitle = `Top requests from ${uniqueCompanies.join(', ')}`;
+    } else {
+      heroTitle = `What the internet is requesting`;
+    }
+  }
+
+  document.getElementById('hero-title').textContent = heroTitle;
+  _defaultHeroTitle = heroTitle;
+
+  // Hero subtitle — compact summary of platforms
+  const heroSub = document.getElementById('hero-sub');
+  const platformNames = [];
+  if (subs.length) platformNames.push('Reddit');
+  if (apps.length) platformNames.push('App Store');
+  if (gpapps.length) platformNames.push('Google Play');
+  if (tpcos.length) platformNames.push('Trustpilot');
+  if (steam.length) platformNames.push('Steam');
+  if (ytq.length) platformNames.push('YouTube');
+  heroSub.textContent = platformNames.length ? 'Tracking ' + platformNames.join(' · ') : '';
+  heroSub.style.display = platformNames.length ? '' : 'none';
+
+  // Hero stats — requests + products only (no posts scanned)
+  const companyCount = new Set(allRequests.map(d=>d.subject)).size;
+  document.getElementById('hs-requests').textContent = allRequests.length;
+  document.getElementById('hs-requests-label').textContent = allRequests.length === 1 ? 'Request Found' : 'Requests Found';
+  document.getElementById('hs-companies').textContent = companyCount;
+  document.getElementById('hs-companies-label').textContent = companyCount === 1 ? 'Product Tracked' : 'Products Tracked';
+  document.getElementById('hero-stats').style.display = 'flex';
+
+  // Show/hide sections
+  const ls = document.getElementById('loading-state');
+  if (ls) ls.style.display = 'none';
+  document.getElementById('main-layout').classList.add('visible');
+  document.getElementById('cat-widget').style.display = 'block';
+
+  buildPlatformWidget(data);
+  buildCats();
+  buildSourcePills();
+  render();
+}
+
+// ── Platform icons widget ─────────────────────────────────
+const PLATFORM_ICONS = {
+  appstore:   { label: 'App Store',   svg: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="currentColor"/></svg>' },
+  googleplay: { label: 'Google Play', svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 20.5v-17c0-.83 1-.95 1.4-.4l14 8.5c.4.24.4.76 0 1L4.4 21c-.4.5-1.4.33-1.4-.5z" fill="#01875f"/></svg>' },
+  reddit:     { label: 'Reddit',      svg: '<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#FF4500"/><path d="M20 12a2 2 0 00-2-2 2 2 0 00-1.4.6A9.7 9.7 0 0012.5 9l.9-4.3 2.9.6a1.4 1.4 0 101.4-1.4 1.4 1.4 0 00-1.3.9l-3.2-.7a.4.4 0 00-.4.3l-1 4.8a9.7 9.7 0 00-4.5 1.6A2 2 0 004 12a2 2 0 001 1.7 3.6 3.6 0 000 .5c0 2.6 3.1 4.8 6.9 4.8s6.9-2.1 6.9-4.8a4 4 0 000-.5A2 2 0 0020 12zm-12 1.7a1.2 1.2 0 111.2 1.2A1.2 1.2 0 018 13.7zm6.7 3.2c-.8.8-2.3.9-2.7.9s-1.9 0-2.7-.9a.3.3 0 01.4-.4c.5.5 1.6.7 2.3.7s1.8-.2 2.3-.7a.3.3 0 01.4.4zm-.2-2a1.2 1.2 0 111.2-1.2 1.2 1.2 0 01-1.2 1.2z" fill="white"/></svg>' },
+  trustpilot: { label: 'Trustpilot',  svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="#00B67A"/></svg>' },
+  youtube:    { label: 'YouTube',     svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z" fill="#FF0000"/></svg>' },
+  steam:      { label: 'Steam',       svg: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M11.98 0C5.37 0 0 5.25 0 11.74c0 4.96 3.07 9.22 7.43 10.97l2.44-6.1a3.45 3.45 0 01-1.34-2.72 3.48 3.48 0 013.48-3.48 3.48 3.48 0 013.48 3.48c0 .63-.18 1.21-.48 1.71l-6.1 2.47C10.12 19.97 11.02 20 11.98 20 18.62 20 24 14.75 24 8.26 24 3.7 21.53 0 11.98 0z" fill="currentColor"/></svg>' },
+};
+
+function buildPlatformWidget(data) {
+  const sourceCounts = {
+    appstore:   (data.appstore_reviews   || 0),
+    googleplay: (data.googleplay_reviews || 0),
+    reddit:     (data.posts_scanned      || 0),
+    trustpilot: (data.trustpilot_reviews || 0),
+    youtube:    (data.youtube_comments   || 0),
+    steam:      (data.steam_reviews      || 0),
+  };
+  const rows = Object.entries(sourceCounts)
+    .filter(([,n]) => n > 0)
+    .sort((a,b) => b[1]-a[1]);
+  if (rows.length === 0) return;
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+  const html = rows.map(([key, n]) => {
+    const p = PLATFORM_ICONS[key];
+    return `<div class="platform-row">
+      <div class="platform-icon">${p.svg}</div>
+      <span>${p.label}</span>
+      <span class="platform-count">${fmt(n)}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('platforms-body').innerHTML = html;
+  document.getElementById('platforms-widget').style.display = '';
+}
+
+// ── Dynamic hero title from search (item 14) ──────────────
+const INDUSTRY_MAP = [
+  { words: ['delta','united','american','southwest','alaska','airline','airlines','flight','flights','aviation'], label: 'Airlines' },
+  { words: ['netflix','hulu','disney','streaming','video','watch'], label: 'Streaming' },
+  { words: ['game','gaming','steam','xbox','playstation','nintendo'], label: 'Gaming' },
+  { words: ['bank','banking','finance','credit','loan','payment'], label: 'Finance' },
+];
+let _defaultHeroTitle = 'What the internet is requesting';
+
+function updateHeroTitle(query) {
+  if (!query || !query.trim()) {
+    document.getElementById('hero-title').textContent = _defaultHeroTitle;
+    return;
+  }
+  const q = query.toLowerCase();
+  const industry = INDUSTRY_MAP.find(i => i.words.some(w => q.includes(w)));
+  if (industry) {
+    document.getElementById('hero-title').textContent = `Top requests from the ${industry.label} industry`;
+  } else {
+    document.getElementById('hero-title').textContent = `Results for "${query.trim()}"`;
+  }
+}
+
+function buildCats() {
+  const counts = {};
+  allRequests.forEach(d => { counts[d.category||'Other'] = (counts[d.category||'Other']||0)+1; });
+  const max = Math.max(...Object.values(counts),1);
+  const html = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([cat,cnt]) =>
+    `<div class="cat-row">
+      <div class="cat-name">${cat}</div>
+      <div class="cat-track"><div class="cat-fill" style="width:${cnt/max*100}%;background:${catColor[cat]||'#9a9590'}"></div></div>
+      <div class="cat-num">${cnt}</div>
+    </div>`
+  ).join('');
+  document.getElementById('cat-body').innerHTML = html;
+}
+
+function cleanSub(sub) {
+  return sub ? sub.replace(/^\/?r\//i, '') : sub;
+}
+
+// Profanity filter — replaces harmful words with asterisks for display only
+// Source material is untouched; only what Requester renders is sanitized
+const PROFANITY_RE = (() => {
+  const words = [
+    'fuck','shit','ass','bitch','cunt','dick','pussy','cock','bastard',
+    'motherfuck','goddamn','damn','crap','piss','twat','wank','slut','whore',
+    'nigger','nigga','faggot','fag','retard','spastic','tranny','dyke',
+    'kike','chink','spic','wetback','cracker','nazi','kill yourself','kys',
+    'rape','molest','pedophile','pedo',
+  ];
+  return new RegExp('\\b(' + words.join('|') + ')\\b', 'gi');
+})();
+
+function sanitize(text) {
+  if (!text) return text;
+  return text.replace(PROFANITY_RE, match => match[0] + '*'.repeat(match.length - 1));
+}
+
+// Helper: get the source keys for one demand (used by both pills and filter)
+function _demandSources(d) {
+  const s = new Set();
+  const PREFIX_MAP = { 'as_':'__appstore__','gp_':'__googleplay__','tp_':'__trustpilot__','st_':'__steam__','yt_':'__youtube__' };
+  for (const pid of (d.post_ids || [])) {
+    let matched = false;
+    for (const [pre, tag] of Object.entries(PREFIX_MAP)) {
+      if (pid.startsWith(pre)) { s.add(tag); matched = true; break; }
+    }
+    if (!matched) {
+      const p = postLookup[pid];
+      if (!p) continue;
+      if      (p._source === 'appstore')   { s.add('__appstore__');  continue; }
+      else if (p._source === 'googleplay') { s.add('__googleplay__'); continue; }
+      if (p._subreddit) s.add('__reddit__');
+    }
+  }
+  const ss = d.source_subreddit || '';
+  if      (ss === 'appstore')   s.add('__appstore__');
+  else if (ss === 'googleplay') s.add('__googleplay__');
+  else if (ss === 'trustpilot') s.add('__trustpilot__');
+  else if (ss === 'youtube')    s.add('__youtube__');
+  else if (ss === 'steam')      s.add('__steam__');
+  else if (ss && !['appstore','googleplay','trustpilot','youtube','steam'].includes(ss)) s.add('__reddit__');
+  return s;
+}
+
+function buildSourcePills() {
+  // ── Build canonical company list from config data ──────────────────────────
+  const knownCompanies = new Set([
+    ...(currentData.appstore_apps    || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+    ...(currentData.googleplay_apps  || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+    ...(currentData.trustpilot_companies || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+    ...(currentData.steam_apps       || []).map(a => typeof a === 'string' ? a : (a.name||'')),
+  ].filter(Boolean));
+
+  // ── Count demands per company (subject) ───────────────────────────────────
+  const counts = {};
+  allRequests.forEach(d => {
+    const subj = d.subject;
+    if (subj) counts[subj] = (counts[subj] || 0) + 1;
+  });
+
+  // Only show pills for known canonical company names (skip "Airlines" / generic subjects)
+  const companies = Object.keys(counts).filter(s =>
+    counts[s] > 0 && (knownCompanies.size === 0 || knownCompanies.has(s))
+  );
+  if (companies.length <= 1) {
+    document.getElementById('source-filter-row').style.display = 'none';
+    return;
+  }
+
+  // Sort by demand count descending
+  companies.sort((a, b) => counts[b] - counts[a]);
+
+  document.getElementById('source-filter-row').style.display = 'flex';
+  const container = document.getElementById('source-pills');
+  container.innerHTML = companies.map(subj => {
+    const n = counts[subj];
+    const safe = subj.replace(/'/g, "\\'");
+    return `<button class="source-pill" data-source="${subj}" onclick="toggleSource('${safe}', this)">${subj} <span style="opacity:.55;font-size:10px;font-weight:400;">${n}</span></button>`;
+  }).join('');
+}
+
+function toggleExpand(uid) {
+  const short = document.getElementById(uid + '_short');
+  const full  = document.getElementById(uid + '_full');
+  if (!short || !full) return;
+  const isCollapsed = full.style.display === 'none';
+  short.style.display = isCollapsed ? 'none' : 'inline';
+  full.style.display  = isCollapsed ? 'inline' : 'none';
+}
+
+function toggleSource(src, btn) {
+  if (activeSources.has(src)) {
+    activeSources.delete(src);
+    btn.classList.remove('active');
+  } else {
+    activeSources.add(src);
+    btn.classList.add('active');
+  }
+  render();
+}
+
+function filterByCat(cat, event) {
+  if (event) event.stopPropagation();
+  // Toggle: clicking the active category clears the filter
+  activeFilter = (activeFilter === cat) ? 'all' : cat;
+  render();
+}
+
+function getFiltered() {
+  return allRequests.filter(d => {
+    const matchCat = activeFilter==='all' || d.category===activeFilter;
+    const q = activeSearch.toLowerCase();
+    const matchQ = !q || (d.action||'').toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q) || (d.summary||'').toLowerCase().includes(q);
+
+    // Company filter — if any companies active, demand subject must match one
+    let matchSrc = true;
+    if (activeSources.size > 0) {
+      matchSrc = activeSources.has(d.subject);
+    }
+
+    return matchCat && matchQ && matchSrc;
+  });
+}
+
+function fmtScore(s) {
+  if(s>=1000000) return (s/1000000).toFixed(1)+'M';
+  if(s>=1000) return (s/1000).toFixed(1)+'k';
+  return Math.round(s).toLocaleString();
+}
+
+function render() {
+  const filtered = getFiltered();
+  document.getElementById('result-count').textContent = `${filtered.length} result${filtered.length!==1?'s':''}`;
+
+  if(!filtered.length) {
+    document.getElementById('request-list').innerHTML = `<div class="no-results"><div class="no-results-title">No matches found</div><p style="font-size:13px;">Try adjusting your search or filters.</p></div>`;
+    return;
+  }
+
+  document.getElementById('request-list').innerHTML = filtered.map((d,i) => {
+    const isTop = i < 3;
+    const threads = (d.post_ids||[]).length;
+    const catCls = catClass[d.category]||'tag-other';
+    const isSelected = d._id === selectedId;
+
+    return `<div class="request-card ${isSelected?'selected':''}" onclick="selectRequest(${d._id})" data-id="${d._id}">
+      <div class="card-top">
+        <div class="card-left">
+          <div class="card-rank-row">
+            <span class="card-rank ${isTop?'top':''}">#${i+1}</span>
+            <span class="card-subject">${d.subject||'Unknown'}</span>
+            ${(() => {
+              const NON_RD = ['as_','gp_','tp_','st_','yt_'];
+              const hasReddit = (d.post_ids||[]).some(id => !NON_RD.some(p=>id.startsWith(p)));
+              const sub = d.source_subreddit && !['appstore','googleplay','trustpilot','steam','youtube'].includes(d.source_subreddit) ? d.source_subreddit : '';
+              return hasReddit ? `<span class="source-badge reddit">${sub ? 'r/'+cleanSub(sub) : 'Reddit'}</span>` : '';
+            })()}
+            ${(d.post_ids||[]).some(id=>id.startsWith('as_')) || d.source_subreddit === 'appstore' ? `<span class="source-badge appstore">📱 App Store</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('gp_')) || d.source_subreddit === 'googleplay' ? `<span class="source-badge googleplay">▶ Google Play</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('tp_')) || d.source_subreddit === 'trustpilot' ? `<span class="source-badge trustpilot">⭐ Trustpilot</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('st_')) || d.source_subreddit === 'steam' ? `<span class="source-badge steam">🎮 Steam</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('yt_')) || d.source_subreddit === 'youtube' ? `<span class="source-badge youtube">📺 YouTube</span>` : ''}
+          </div>
+          <div class="card-action">${sanitize(d.action||'No description')}</div>
+          ${d.summary ? `<div class="card-summary">${sanitize(d.summary||'')}…</div>` : ''}
+        </div>
+        <div class="card-right">
+          <div class="gravity-score">${fmtScore(d.gravity_score)}</div>
+          <div class="gravity-label">Gravity Score</div>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <div class="card-tags">
+          <button class="tag ${catCls}${activeFilter===d.category?' tag-active':''}" onclick="filterByCat('${(d.category||'Other').replace(/'/g,"\\'")}',event)" title="Filter by ${d.category||'Other'}">${d.category||'Other'}</button>
+          <span class="thread-count">${threads} thread${threads!==1?'s':''}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="upvote-btn ${d.user_voted?'voted':''}" onclick="toggleVote('${d.slug||''}',event,this)" data-slug="${d.slug||''}">
+            ▲ <span class="vote-count">${d.vote_count||0}</span>
+          </button>
+          <button class="share-btn" onclick="shareSubject('${(d.slug||_clientSlug(d.subject,d.action)).replace(/'/g,"\\'")}',event)" title="Copy link to this request">🔗</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectRequest(id) {
+  selectedId = id;
+  const d = allRequests.find(x => x._id===id);
+  if(!d) return;
+  // Only update selection classes, don't re-render whole list (prevents flash)
+  document.querySelectorAll('.request-card').forEach(card => {
+    const cardId = parseInt(card.dataset.id);
+    card.classList.toggle('selected', cardId === id);
+  });
+
+  const rank = getFiltered().findIndex(x=>x._id===id)+1;
+  document.getElementById('detail-rank').textContent = `#${rank}`;
+
+  // Build thread cards
+  const threadHTML = (d.post_ids||[]).map(pid => {
+    const p = postLookup[pid];
+    if(!p) return '';
+    const isAppStore    = pid.startsWith('as_') || p._source === 'appstore';
+    const isGooglePlay  = pid.startsWith('gp_') || p._source === 'googleplay';
+    const isTrustpilot  = pid.startsWith('tp_') || p._source === 'trustpilot';
+    const isSteam       = pid.startsWith('st_') || p._source === 'steam';
+    const isYouTube     = pid.startsWith('yt_') || p._source === 'youtube';
+    const isStore       = isAppStore || isGooglePlay || isTrustpilot || isSteam || isYouTube;
+    const redditUrl    = isStore ? null : `https://reddit.com${p.permalink||''}`;
+    const topComment   = p.top_comments?.[0];
+    // Date formatting
+    const dateStr = p.created_utc
+      ? new Date(p.created_utc * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+      : '';
+
+    const sourceEmoji = isAppStore ? '📱 App Store' : isGooglePlay ? '▶ Google Play'
+      : isTrustpilot ? '⭐ Trustpilot' : isSteam ? '🎮 Steam' : isYouTube ? '📺 YouTube' : null;
+    const scoreLabel = sourceEmoji
+      ? `${sourceEmoji} · ${dateStr}`
+      : `↑ ${(p.score||0).toLocaleString()} · reddit.com · ${dateStr}`;
+    const preview = isStore ? p.selftext : (topComment ? topComment.text : null);
+    const title = sanitize(p.title) || (isAppStore ? 'App Store Review' : isGooglePlay ? 'Google Play Review' : isTrustpilot ? 'Trustpilot Review' : isSteam ? 'Steam Review' : isYouTube ? 'YouTube Comment' : pid);
+
+    const inner = `
+      <div class="thread-title">${title}</div>
+      <div class="thread-meta">
+        <span class="thread-upvotes">${scoreLabel}</span>
+      </div>
+      ${preview ? (() => {
+        const full = sanitize(preview);
+        const SHORT = 160;
+        // Only collapse if there's meaningfully more to show (>30 chars hidden)
+        if (full.length <= SHORT + 30) {
+          return `<div class="comment-preview">"${full}"</div>`;
+        }
+        const uid = 'exp_' + Math.random().toString(36).slice(2,8);
+        return `<div class="comment-preview">
+          <span id="${uid}_short">"${full.slice(0,SHORT)}<span class="expand-ellipsis">…</span>"
+            <button class="expand-btn" onclick="toggleExpand('${uid}')">Show more</button>
+          </span>
+          <span id="${uid}_full" style="display:none">"${full}"
+            <button class="expand-btn" onclick="toggleExpand('${uid}')">Show less</button>
+          </span>
+        </div>`;
+      })() : ''}
+    `;
+
+    // Store reviews: plain div (no external link, it 404s)
+    // Reddit posts: clickable anchor
+    return isStore
+      ? `<div class="thread-card">${inner}</div>`
+      : `<a class="thread-card" href="${redditUrl}" target="_blank" rel="noopener">${inner}</a>`;
+  }).filter(Boolean).join('') || '<p style="font-size:13px;color:var(--ink-light);">No source threads available</p>';
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-subject">${d.subject||'Unknown'}</div>
+    <div class="detail-action">${sanitize(d.action||'No description')}</div>
+    ${d.summary ? `<div class="detail-summary">${sanitize(d.summary)}</div>` : ''}
+    <div class="detail-score-row">
+      <div class="detail-score-num">${fmtScore(d.gravity_score)}</div>
+      <div class="detail-score-label">Gravity Score</div>
+      <div style="margin-left:auto;">
+        <button class="upvote-btn-lg ${d.user_voted?'voted':''}" id="detail-vote-btn" onclick="toggleVote('${d.slug||_clientSlug(d.subject,d.action)}',event,this)" data-slug="${d.slug||_clientSlug(d.subject,d.action)}">
+          ▲ <span id="detail-vote-count">${d.vote_count||0}</span> vote${(d.vote_count||0)!==1?'s':''}
+        </button>
+      </div>
+    </div>
+    <div class="threads-label">${(d.post_ids||[]).length} Source Thread${(d.post_ids||[]).length!==1?'s':''}</div>
+    ${threadHTML}
+    <div id="detail-trend"></div>
+  `;
+
+  // Render sparkline if history data exists
+  renderTrendline(d.slug || _clientSlug(d.subject, d.action));
+}
+
+function renderTrendline(slug) {
+  const el = document.getElementById('detail-trend');
+  if (!el) return;
+  if (!historyData || !historyData.snapshots || historyData.snapshots.length < 2) {
+    el.innerHTML = '<div class="trend-wrap"><div class="trend-label">Trend</div><div class="trend-empty">Not enough data yet — check back after a few scrape cycles.</div></div>';
+    return;
+  }
+
+  const snaps = historyData.snapshots;
+  const points = snaps.map(s => ({ ts: s.ts, score: s.scores[slug] || 0 }));
+  const scores = points.map(p => p.score);
+  const max = Math.max(...scores, 1);
+  const min = Math.min(...scores);
+  const W = 260, H = 48, PAD = 2;
+
+  // Build SVG polyline
+  const pts = scores.map((s, i) => {
+    const x = PAD + (i / Math.max(scores.length - 1, 1)) * (W - PAD * 2);
+    const y = PAD + (1 - (s - min) / Math.max(max - min, 1)) * (H - PAD * 2);
+    return [x.toFixed(1), y.toFixed(1)];
+  });
+  const lineStr  = pts.map(p => p.join(',')).join(' ');
+  const areaStr  = `${pts[0][0]},${H} ${lineStr} ${pts[pts.length-1][0]},${H}`;
+  const lastPt   = pts[pts.length - 1];
+
+  // Date labels
+  const fmtDate = ts => {
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+  const first = fmtDate(snaps[0].ts);
+  const last  = fmtDate(snaps[snaps.length - 1].ts);
+
+  // Trend direction
+  const recent = scores.slice(-3);
+  const older  = scores.slice(-6, -3);
+  const avgRecent = recent.reduce((a,b) => a+b, 0) / (recent.length || 1);
+  const avgOlder  = older.length ? older.reduce((a,b) => a+b, 0) / older.length : avgRecent;
+  const dir = avgRecent > avgOlder * 1.1 ? '📈 Trending up' : avgRecent < avgOlder * 0.9 ? '📉 Declining' : '➡️ Stable';
+
+  el.innerHTML = `
+    <div class="trend-wrap">
+      <div class="trend-label">Trend <span style="font-weight:400;text-transform:none;letter-spacing:0;">${dir}</span></div>
+      <svg class="trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <polygon class="trend-area" points="${areaStr}"/>
+        <polyline class="trend-line" points="${lineStr}"/>
+        <circle class="trend-dot" cx="${lastPt[0]}" cy="${lastPt[1]}" r="3"/>
+      </svg>
+      <div class="trend-dates"><span>${first}</span><span>${last}</span></div>
+    </div>`;
+}
+
+// Filters
+document.querySelectorAll('.pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input', e => {
+  activeSearch = e.target.value;
+  updateHeroTitle(activeSearch);
+  render();
+});
+
+// ── Settings Panel ────────────────────────────────────────────────────────────
+
+let _currentConfig = null;
+
+async function openSettings() {
+  const panel   = document.getElementById('settings-panel');
+  const overlay = document.getElementById('settings-overlay');
+  panel.style.display   = 'block';
+  overlay.style.display = 'block';
+  document.getElementById('settings-status').textContent = '';
+
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) throw new Error('Server not running — start open_dashboard.bat first');
+    _currentConfig = await res.json();
+    populateSettings(_currentConfig);
+  } catch(e) {
+    document.getElementById('settings-status').style.color = '#c0392b';
+    document.getElementById('settings-status').textContent = '⚠ ' + e.message;
+    // Still populate with defaults so panel is usable
+    populateSettings({
+      subreddits: ['netflix','cordcutters'],
+      appstore_apps: [{name:'Netflix',app_id:'363590051'}],
+      googleplay_apps: [{name:'Netflix',app_id:'com.netflix.mediaclient'}],
+      settings: {post_limit:40,max_comments:15,app_store_pages:5,google_play_count:200}
+    });
+  }
+}
+
+function closeSettings() {
+  document.getElementById('settings-panel').style.display   = 'none';
+  document.getElementById('settings-overlay').style.display = 'none';
+}
+
+function populateSettings(cfg) {
+  const s = cfg.settings || {};
+
+  // Subreddits
+  const subList = document.getElementById('sub-list');
+  subList.innerHTML = '';
+  (cfg.subreddits || []).forEach(name => addSubRow(subList, name));
+
+  // App Store
+  const asList = document.getElementById('as-list');
+  asList.innerHTML = '';
+  (cfg.appstore_apps || []).forEach(a => addAppRow(asList, a.name, a.app_id, 'as'));
+
+  // Google Play
+  const gpList = document.getElementById('gp-list');
+  gpList.innerHTML = '';
+  (cfg.googleplay_apps || []).forEach(a => addAppRow(gpList, a.name, a.app_id, 'gp'));
+
+  // Advanced
+  document.getElementById('cfg-post-limit').value    = s.post_limit        || 40;
+  document.getElementById('cfg-max-comments').value  = s.max_comments      || 15;
+  document.getElementById('cfg-as-pages').value      = s.app_store_pages   || 5;
+  document.getElementById('cfg-gp-count').value      = s.google_play_count || 200;
+}
+
+function addSubRow(container, value='') {
+  const row = document.createElement('div');
+  row.className = 'settings-row';
+  row.innerHTML = `
+    <input type="text" placeholder="e.g. spotify" value="${sanitize(value)}" style="font-family:monospace;">
+    <button class="del-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function addAppRow(container, name='', appId='', prefix='as') {
+  const row = document.createElement('div');
+  row.className = 'settings-row';
+  row.dataset.prefix = prefix;
+  row.innerHTML = `
+    <input type="text" placeholder="App Name" value="${sanitize(name)}" style="flex:0.8;">
+    <input type="text" placeholder="${prefix === 'as' ? 'App ID (numeric)' : 'Package ID (com.example.app)'}" value="${sanitize(appId)}" style="font-family:monospace;">
+    <button class="del-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function addSubreddit() {
+  addSubRow(document.getElementById('sub-list'));
+}
+
+function addAppStoreApp() {
+  addAppRow(document.getElementById('as-list'), '', '', 'as');
+}
+
+function addGooglePlayApp() {
+  addAppRow(document.getElementById('gp-list'), '', '', 'gp');
+}
+
+function readRows(containerId) {
+  const rows = document.querySelectorAll(`#${containerId} .settings-row`);
+  const items = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if (inputs.length === 1) {
+      const v = inputs[0].value.trim().toLowerCase().replace(/^r\//,'');
+      if (v) items.push(v);
+    } else if (inputs.length >= 2) {
+      const name  = inputs[0].value.trim();
+      const appId = inputs[1].value.trim();
+      if (name && appId) items.push({ name, app_id: appId });
+    }
+  });
+  return items;
+}
+
+async function saveSettings() {
+  const statusEl = document.getElementById('settings-status');
+  statusEl.style.color = 'var(--ink-light)';
+  statusEl.textContent = 'Saving…';
+
+  const cfg = {
+    subreddits:     readRows('sub-list'),
+    appstore_apps:  readRows('as-list'),
+    googleplay_apps:readRows('gp-list'),
+    settings: {
+      post_limit:        parseInt(document.getElementById('cfg-post-limit').value)    || 40,
+      max_comments:      parseInt(document.getElementById('cfg-max-comments').value)  || 15,
+      app_store_pages:   parseInt(document.getElementById('cfg-as-pages').value)      || 5,
+      google_play_count: parseInt(document.getElementById('cfg-gp-count').value)      || 200,
+    }
+  };
+
+  if (!cfg.subreddits.length && !cfg.appstore_apps.length && !cfg.googleplay_apps.length) {
+    statusEl.style.color = '#c0392b';
+    statusEl.textContent = '⚠ Add at least one subreddit or app before saving.';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    statusEl.style.color = '#1a7a4a';
+    statusEl.textContent = '✓ Config saved! Run the scraper to use the new targets.';
+    _currentConfig = cfg;
+    setTimeout(closeSettings, 2000);
+  } catch(e) {
+    statusEl.style.color = '#c0392b';
+    statusEl.textContent = '⚠ Save failed: ' + e.message;
+  }
+}
+</script>
+
+<!-- About section -->
+<section id="about" style="max-width:1200px;margin:60px auto 0;padding:0 40px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px;">
+
+    <!-- What is Requester -->
+    <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">What is Requester?</div>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">The voice of your customers, ranked.</h3>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Requester monitors the most popular places for product feedback, then extracts and ranks the top requests, bug fixes, and feature asks.</p>
+    </div>
+
+    <!-- Gravity Score -->
+    <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">Gravity Score</div>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">More signal, more weight.</h3>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Gravity combines <strong>upvotes</strong> (community validation), <strong>unique threads</strong> (independent conversations mentioning the same request), and <strong>recency</strong> (newer requests score higher).</p>
+    </div>
+
+    <!-- Contact -->
+    <div style="background:var(--white);border:1px solid var(--ink-faint);border-radius:var(--radius);padding:28px 32px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px;">Contact</div>
+      <h3 style="font-family:var(--display);font-size:20px;font-weight:700;margin-bottom:12px;line-height:1.3;">Built for product teams.</h3>
+      <p style="font-size:14px;color:var(--ink-mid);line-height:1.7;">Interested in a custom dashboard, different industry, or integration?</p>
+      <button id="reveal-contact-btn" onclick="this.style.display='none';document.getElementById('contact-revealed').style.display='block';" style="margin-top:16px;padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.02em;">Show contact info</button>
+      <div id="contact-revealed" style="display:none;margin-top:16px;font-size:14px;color:var(--ink);">
+        <a href="mailto:YourRequester@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:600;">YourRequester@gmail.com</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Footer -->
+<footer style="border-top:1px solid var(--ink-faint);margin-top:60px;padding:32px 40px;display:flex;align-items:center;justify-content:center;gap:10px;">
+  <div class="logo-icon" style="width:22px;height:22px;font-size:11px;">R</div>
+  <span style="font-size:13px;color:var(--ink-light);">Requester</span>
+  <span style="font-size:13px;color:var(--ink-faint);">·</span>
+  <span style="font-size:13px;color:var(--ink-light);">Tracking what people are asking for</span>
+</footer>
+
+</body>
 </html>
