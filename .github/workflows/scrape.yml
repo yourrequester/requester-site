@@ -18,10 +18,10 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.4.0
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -38,7 +38,7 @@ jobs:
         run: python requester_phase1.py
 
       - name: Commit updated results
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
         with:
           commit_message: "data: update scrape results [skip ci]"
           file_pattern: requester_results.json requester_history.json

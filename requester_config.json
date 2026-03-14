@@ -1,188 +1,80 @@
 {
   "target_name": "Requester",
   "subreddits": [
-    "delta",
-    "unitedairlines",
-    "americanairlines",
-    "southwestairlines",
-    "alaska_airlines",
-    "flights",
-    "airlines",
-    "travel",
-    "awardtravel",
-    "airtravel",
-    "frequentflyers",
-    "netflix",
-    "spotify",
-    "DisneyPlus",
-    "doordash",
-    "UberEATS",
-    "uber",
-    "lyft",
-    "grubhub"
+    "delta", "unitedairlines", "americanairlines", "southwestairlines",
+    "alaska_airlines", "flights", "airlines", "travel", "awardtravel",
+    "netflix", "spotify", "DisneyPlus",
+    "doordash", "UberEATS", "uber", "lyft",
+    "Chase", "paypal", "CashApp", "venmo",
+    "amazon", "Instagram", "tiktok_us",
+    "personalfinance"
   ],
-  "sort_modes": [
-    "hot",
-    "top",
-    "new",
-    "controversial"
-  ],
-  "post_limit": 100,
-  "max_comments": 20,
+  "sort_modes": ["hot", "top", "new", "controversial"],
+  "post_limit": 75,
+  "max_comments": 15,
   "max_posts_for_ai": 300,
   "appstore_apps": [
-    {
-      "name": "Delta",
-      "app_id": "388491656"
-    },
-    {
-      "name": "United",
-      "app_id": "449945214"
-    },
-    {
-      "name": "American",
-      "app_id": "382698565"
-    },
-    {
-      "name": "Southwest",
-      "app_id": "344542975"
-    },
-    {
-      "name": "Alaska",
-      "app_id": "356143077"
-    },
-    {
-      "name": "Netflix",
-      "app_id": "363590051"
-    },
-    {
-      "name": "Spotify",
-      "app_id": "324684580"
-    },
-    {
-      "name": "Disney+",
-      "app_id": "1446075923"
-    },
-    {
-      "name": "DoorDash",
-      "app_id": "719972451"
-    },
-    {
-      "name": "Uber Eats",
-      "app_id": "1058959277"
-    },
-    {
-      "name": "Uber",
-      "app_id": "368677368"
-    },
-    {
-      "name": "Lyft",
-      "app_id": "529379082"
-    }
+    { "name": "Delta",      "app_id": "388491656" },
+    { "name": "United",     "app_id": "449945214" },
+    { "name": "American",   "app_id": "382698565" },
+    { "name": "Southwest",  "app_id": "344542975" },
+    { "name": "Alaska",     "app_id": "356143077" },
+    { "name": "Netflix",    "app_id": "363590051" },
+    { "name": "Spotify",    "app_id": "324684580" },
+    { "name": "Disney+",    "app_id": "1446075923" },
+    { "name": "DoorDash",   "app_id": "719972451" },
+    { "name": "Uber Eats",  "app_id": "1058959277" },
+    { "name": "Uber",       "app_id": "368677368" },
+    { "name": "Lyft",       "app_id": "529379082" },
+    { "name": "Chase",      "app_id": "298867247" },
+    { "name": "PayPal",     "app_id": "283646709" },
+    { "name": "Cash App",   "app_id": "711923939" },
+    { "name": "Venmo",      "app_id": "351727428" },
+    { "name": "Amazon",     "app_id": "297606951" },
+    { "name": "Instagram",  "app_id": "389801252" }
   ],
-  "appstore_pages": 8,
+  "appstore_pages": 6,
   "appstore_min_rating": 3,
   "googleplay_apps": [
-    {
-      "name": "Delta",
-      "app_id": "com.delta.mobile.android"
-    },
-    {
-      "name": "United",
-      "app_id": "com.united.mobile.android"
-    },
-    {
-      "name": "American",
-      "app_id": "com.aa.android"
-    },
-    {
-      "name": "Southwest",
-      "app_id": "com.southwestairlines.mobile"
-    },
-    {
-      "name": "Alaska",
-      "app_id": "com.alaskaairlines.android"
-    },
-    {
-      "name": "Netflix",
-      "app_id": "com.netflix.mediaclient"
-    },
-    {
-      "name": "Spotify",
-      "app_id": "com.spotify.music"
-    },
-    {
-      "name": "Disney+",
-      "app_id": "com.disney.disneyplus"
-    },
-    {
-      "name": "DoorDash",
-      "app_id": "com.dd.doordash"
-    },
-    {
-      "name": "Uber Eats",
-      "app_id": "com.ubercab.eats"
-    },
-    {
-      "name": "Uber",
-      "app_id": "com.ubercab"
-    },
-    {
-      "name": "Lyft",
-      "app_id": "me.lyft.android"
-    }
+    { "name": "Delta",      "app_id": "com.delta.mobile.android" },
+    { "name": "United",     "app_id": "com.united.mobile.android" },
+    { "name": "American",   "app_id": "com.aa.android" },
+    { "name": "Southwest",  "app_id": "com.southwestairlines.mobile" },
+    { "name": "Alaska",     "app_id": "com.alaskaairlines.android" },
+    { "name": "Netflix",    "app_id": "com.netflix.mediaclient" },
+    { "name": "Spotify",    "app_id": "com.spotify.music" },
+    { "name": "Disney+",    "app_id": "com.disney.disneyplus" },
+    { "name": "DoorDash",   "app_id": "com.dd.doordash" },
+    { "name": "Uber Eats",  "app_id": "com.ubercab.eats" },
+    { "name": "Uber",       "app_id": "com.ubercab" },
+    { "name": "Lyft",       "app_id": "me.lyft.android" },
+    { "name": "Chase",      "app_id": "com.chase.sig.android" },
+    { "name": "PayPal",     "app_id": "com.paypal.android.p2pmobile" },
+    { "name": "Cash App",   "app_id": "com.squareup.cash" },
+    { "name": "Venmo",      "app_id": "com.venmo" },
+    { "name": "Amazon",     "app_id": "com.amazon.mShop.android.shopping" },
+    { "name": "Instagram",  "app_id": "com.instagram.android" }
   ],
-  "googleplay_count": 200,
+  "googleplay_count": 150,
   "googleplay_max_rating": 3,
   "trustpilot_companies": [
-    {
-      "name": "Delta",
-      "slug": "delta.com"
-    },
-    {
-      "name": "United",
-      "slug": "united.com"
-    },
-    {
-      "name": "American",
-      "slug": "aa.com"
-    },
-    {
-      "name": "Southwest",
-      "slug": "southwest.com"
-    },
-    {
-      "name": "Alaska",
-      "slug": "alaskaair.com"
-    },
-    {
-      "name": "Netflix",
-      "slug": "netflix.com"
-    },
-    {
-      "name": "Spotify",
-      "slug": "spotify.com"
-    },
-    {
-      "name": "Disney+",
-      "slug": "disneyplus.com"
-    },
-    {
-      "name": "DoorDash",
-      "slug": "doordash.com"
-    },
-    {
-      "name": "Uber Eats",
-      "slug": "ubereats.com"
-    },
-    {
-      "name": "Uber",
-      "slug": "uber.com"
-    },
-    {
-      "name": "Lyft",
-      "slug": "lyft.com"
-    }
+    { "name": "Delta",      "slug": "delta.com" },
+    { "name": "United",     "slug": "united.com" },
+    { "name": "American",   "slug": "aa.com" },
+    { "name": "Southwest",  "slug": "southwest.com" },
+    { "name": "Alaska",     "slug": "alaskaair.com" },
+    { "name": "Netflix",    "slug": "netflix.com" },
+    { "name": "Spotify",    "slug": "spotify.com" },
+    { "name": "Disney+",    "slug": "disneyplus.com" },
+    { "name": "DoorDash",   "slug": "doordash.com" },
+    { "name": "Uber Eats",  "slug": "ubereats.com" },
+    { "name": "Uber",       "slug": "uber.com" },
+    { "name": "Lyft",       "slug": "lyft.com" },
+    { "name": "Chase",      "slug": "chase.com" },
+    { "name": "PayPal",     "slug": "paypal.com" },
+    { "name": "Cash App",   "slug": "cash.app" },
+    { "name": "Amazon",     "slug": "amazon.com" },
+    { "name": "Instagram",  "slug": "instagram.com" }
   ],
   "trustpilot_pages": 4,
   "trustpilot_max_rating": 3,
@@ -190,17 +82,17 @@
   "youtube_searches": [
     "Delta Airlines complaints 2025",
     "United Airlines app issues",
-    "American Airlines customer service problem",
     "Southwest Airlines complaints",
-    "Alaska Airlines feedback",
     "Netflix missing features wishlist",
-    "Spotify feature request",
-    "Disney Plus problems complaints",
-    "DoorDash driver app issues",
+    "Spotify feature request 2025",
+    "DoorDash app issues complaints",
     "Uber Eats complaints 2025",
-    "Uber app problems feedback",
-    "Lyft app complaints feature request"
+    "Chase bank app problems",
+    "PayPal app issues feature request",
+    "Cash App complaints 2025",
+    "Amazon app feature request",
+    "Instagram feature request 2025"
   ],
-  "youtube_max_results": 200,
+  "youtube_max_results": 150,
   "google_trends_boost": true
 }

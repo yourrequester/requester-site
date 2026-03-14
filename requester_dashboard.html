@@ -1852,29 +1852,62 @@ function showToast(msg) {
 }
 
 // ── Auto-load: static JSON (production) or local server (dev) ────────────
+const _CACHE_KEY = 'requester_results_cache';
+
+function _saveCache(data) {
+  try {
+    if (data && (data.leaderboard||[]).length > 0)
+      localStorage.setItem(_CACHE_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function _loadCache() {
+  try {
+    const raw = localStorage.getItem(_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
 async function tryAutoLoad() {
   // Try static JSON first (GitHub Pages production)
   try {
     const res = await fetch('./requester_results.json?_=' + Date.now(), { signal: AbortSignal.timeout(4000), cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
-      if (!data.error) { currentData = data; ingestData(data); return true; }
+      if (!data.error && (data.leaderboard||[]).length > 0) {
+        currentData = data;
+        _saveCache(data);
+        ingestData(data);
+        return true;
+      }
     }
   } catch(e) { /* fall through to dev server */ }
 
   // Fallback: local dev server
   try {
     const res = await fetch('/api/latest', { signal: AbortSignal.timeout(2000) });
-    if (!res.ok) return false;
-    const data = await res.json();
-    if (data.error) return false;
-    currentData = data;
-    ingestData(data);
-    if (data._source === 'db' && data.db_stats) showDbStats(data.db_stats);
+    if (res.ok) {
+      const data = await res.json();
+      if (!data.error && (data.leaderboard||[]).length > 0) {
+        currentData = data;
+        _saveCache(data);
+        ingestData(data);
+        if (data._source === 'db' && data.db_stats) showDbStats(data.db_stats);
+        return true;
+      }
+    }
+  } catch(e) {}
+
+  // Last resort: cached data from a previous successful load
+  const cached = _loadCache();
+  if (cached) {
+    currentData = cached;
+    ingestData(cached);
+    showToast('Showing cached data — live data unavailable');
     return true;
-  } catch(e) {
-    return false;
   }
+
+  return false;
 }
 
 function showDbStats(stats) {
@@ -2273,13 +2306,11 @@ function resetHome() {
   selectedId = -1;
   const searchInput = document.getElementById('search-input');
   if (searchInput) searchInput.value = '';
-  // Clear company pill active states
   document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
-  // Reset hero title to default
   const titleEl = document.getElementById('hero-title');
   if (titleEl && _defaultHeroTitle) titleEl.textContent = _defaultHeroTitle;
-  // Clear URL params
   if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   render();
 }
 

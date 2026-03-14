@@ -1339,8 +1339,14 @@ def run():
         }
     }
 
-    with open("requester_results.json", "w") as f:
-        json.dump(output, f, indent=2)
+    # Only overwrite results if we actually extracted demands — never blank out
+    # a previously good run just because Claude API was temporarily unavailable.
+    if demands:
+        with open("requester_results.json", "w") as f:
+            json.dump(output, f, indent=2)
+        print(f"  💾 Wrote {len(demands)} demands to requester_results.json")
+    else:
+        print(f"  ⚠  0 demands extracted — keeping existing requester_results.json intact")
 
     # ── Append history snapshot (compact: slug → gravity score) ────────────
     history_file = "requester_history.json"
@@ -1350,17 +1356,18 @@ def run():
     except (FileNotFoundError, json.JSONDecodeError):
         history = {"snapshots": []}
 
-    snapshot = {
-        "ts": output["scraped_at"],
-        "scores": {
-            d.get("slug", _make_demand_slug(d.get("subject",""), d.get("action",""))):
-                round(d.get("gravity_score", 0), 1)
-            for d in demands[:200]
+    if demands:
+        snapshot = {
+            "ts": output["scraped_at"],
+            "scores": {
+                d.get("slug", _make_demand_slug(d.get("subject",""), d.get("action",""))):
+                    round(d.get("gravity_score", 0), 1)
+                for d in demands[:200]
+            }
         }
-    }
-    history["snapshots"].append(snapshot)
-    # Keep last 60 snapshots (~15 days at 6-hour intervals)
-    history["snapshots"] = history["snapshots"][-60:]
+        history["snapshots"].append(snapshot)
+    # Keep last 90 snapshots (~3 months at daily intervals)
+    history["snapshots"] = history["snapshots"][-90:]
     with open(history_file, "w") as f:
         json.dump(history, f)
     print(f"  📊 History: {len(history['snapshots'])} snapshots saved")
