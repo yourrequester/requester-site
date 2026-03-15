@@ -98,5 +98,27 @@
     "Coinbase app problems complaints 2025"
   ],
   "youtube_max_results": 150,
-  "google_trends_boost": true
+  "google_trends_boost": true,
+  "bbb_companies": [
+    { "name": "Delta",      "url": "https://www.bbb.org/us/ga/atlanta/profile/airlines/delta-air-lines-0443-3049" },
+    { "name": "United",     "url": "https://www.bbb.org/us/il/chicago/profile/airlines/united-airlines-inc-0654-5446" },
+    { "name": "American",   "url": "https://www.bbb.org/us/tx/fort-worth/profile/airlines/american-airlines-0825-57010002" },
+    { "name": "Southwest",  "url": "https://www.bbb.org/us/tx/dallas/profile/airlines/southwest-airlines-company-0875-2352" },
+    { "name": "Alaska",     "url": "https://www.bbb.org/us/wa/seatac/profile/airlines/alaska-airlines-1296-505853" },
+    { "name": "Netflix",    "url": "https://www.bbb.org/us/ca/los-gatos/profile/entertainment/netflix-inc-1216-206533" },
+    { "name": "Spotify",    "url": "https://www.bbb.org/us/ny/new-york/profile/music-distribution-companies/spotify-usa-inc-0121-127561" },
+    { "name": "Disney+",    "url": "https://www.bbb.org/us/ny/new-york/profile/streaming-service/disney-0121-87154872" },
+    { "name": "DoorDash",   "url": "https://www.bbb.org/us/ca/san-francisco/profile/food-delivery/doordash-1116-545841" },
+    { "name": "Uber",       "url": "https://www.bbb.org/us/ca/san-francisco/profile/transportation/uber-technologies-1116-438996" },
+    { "name": "Uber Eats",  "url": "https://www.bbb.org/us/tx/austin/profile/delivery-service/uber-eats-0825-1000197903" },
+    { "name": "Lyft",       "url": "https://www.bbb.org/us/ca/san-francisco/profile/car-service/lyft-inc-1116-379827" },
+    { "name": "Chase",      "url": "https://www.bbb.org/us/ny/new-york/profile/bank/jpmorgan-chase-co-0121-136" },
+    { "name": "PayPal",     "url": "https://www.bbb.org/us/ca/san-jose/profile/payment-processing-services/paypal-inc-1216-210387" },
+    { "name": "Cash App",   "url": "https://www.bbb.org/us/ca/oakland/profile/mobile-apps/cash-app-1116-919908" },
+    { "name": "Venmo",      "url": "https://www.bbb.org/us/ca/san-jose/profile/payment-processing-services/venmo-1216-634567" },
+    { "name": "Amazon",     "url": "https://www.bbb.org/us/wa/seattle/profile/ecommerce/amazoncom-1296-7039385" },
+    { "name": "eBay",       "url": "https://www.bbb.org/us/ca/san-jose/profile/online-shopping/ebay-inc-1216-204015" },
+    { "name": "Coinbase",   "url": "https://www.bbb.org/us/ca/san-francisco/profile/cryptocurrency-exchange/coinbase-inc-1116-454104" }
+  ],
+  "bbb_pages": 3
 }

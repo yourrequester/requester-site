@@ -457,7 +457,7 @@ body[data-theme="dark"] a.thread-card:hover {
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 24px rgba(26,24,20,0.07);
-  animation: card-in 0.35s ease both;
+  /* animation applied via .cards-enter on first load only */
   position: relative;
   overflow: hidden;
 }
@@ -484,14 +484,16 @@ body[data-theme="dark"] a.thread-card:hover {
 
 .request-card.selected::before { background: var(--accent); }
 
-.request-card:nth-child(1) { animation-delay: 0.04s; }
-.request-card:nth-child(2) { animation-delay: 0.08s; }
-.request-card:nth-child(3) { animation-delay: 0.12s; }
-.request-card:nth-child(4) { animation-delay: 0.16s; }
-.request-card:nth-child(5) { animation-delay: 0.20s; }
-.request-card:nth-child(6) { animation-delay: 0.24s; }
-.request-card:nth-child(7) { animation-delay: 0.28s; }
-.request-card:nth-child(8) { animation-delay: 0.32s; }
+/* First-load entrance animation — only applied via .cards-enter class */
+.cards-enter .request-card { animation: card-in 0.35s ease both; }
+.cards-enter .request-card:nth-child(1) { animation-delay: 0.04s; }
+.cards-enter .request-card:nth-child(2) { animation-delay: 0.08s; }
+.cards-enter .request-card:nth-child(3) { animation-delay: 0.12s; }
+.cards-enter .request-card:nth-child(4) { animation-delay: 0.16s; }
+.cards-enter .request-card:nth-child(5) { animation-delay: 0.20s; }
+.cards-enter .request-card:nth-child(6) { animation-delay: 0.24s; }
+.cards-enter .request-card:nth-child(7) { animation-delay: 0.28s; }
+.cards-enter .request-card:nth-child(8) { animation-delay: 0.32s; }
 
 @keyframes card-in {
   from { opacity: 0; transform: translateY(10px); }
@@ -1029,6 +1031,7 @@ body[data-theme="dark"] a.thread-card:hover {
 .source-badge.steam       { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
 .source-badge.youtube     { background: #fce4ec; color: #c62828; border: 1px solid #f48fb1; }
 .source-badge.reddit   { background: #fff2ea; border-color: #f5cdb8; color: #c04a10; }
+.source-badge.bbb      { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
 
 .no-results {
   text-align: center;
@@ -1562,6 +1565,7 @@ body[data-theme="dark"] a.thread-card:hover {
 
 <script>
 let allRequests = [], postLookup = {}, currentData = {};
+let _firstRender = true;
 let activeFilter = 'all', activeSearch = '', selectedId = -1, sharedSlug = '';
 let activeSources = new Set(); // legacy — kept for resetHome compat
 let activeIndustry = '';
@@ -2339,6 +2343,7 @@ const PLATFORM_ICONS = {
   trustpilot: { label: 'Trustpilot' },
   youtube:    { label: 'YouTube' },
   steam:      { label: 'Steam' },
+  bbb:        { label: 'BBB' },
 };
 
 function buildPlatformWidget(data) {
@@ -2349,6 +2354,7 @@ function buildPlatformWidget(data) {
     trustpilot: (data.trustpilot_reviews || 0),
     youtube:    (data.youtube_comments   || 0),
     steam:      (data.steam_reviews      || 0),
+    bbb:        (data.bbb_complaints     || 0),
   };
   const rows = Object.entries(sourceCounts)
     .filter(([,n]) => n > 0)
@@ -2629,6 +2635,7 @@ function render() {
             ${(d.post_ids||[]).some(id=>id.startsWith('tp_')) || d.source_subreddit === 'trustpilot' ? `<span class="source-badge trustpilot">Trustpilot</span>` : ''}
             ${(d.post_ids||[]).some(id=>id.startsWith('st_')) || d.source_subreddit === 'steam' ? `<span class="source-badge steam">Steam</span>` : ''}
             ${(d.post_ids||[]).some(id=>id.startsWith('yt_')) || d.source_subreddit === 'youtube' ? `<span class="source-badge youtube">YouTube</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('bb_')) || d.source_subreddit === 'bbb' ? `<span class="source-badge bbb">BBB</span>` : ''}
           </div>
           <div class="card-action">${sanitize(d.action||'No description')}</div>
           ${d.summary ? `<div class="card-summary">${sanitize(d.summary||'')}…</div>` : ''}
@@ -2652,6 +2659,15 @@ function render() {
       </div>
     </div>`;
   }).join('');
+
+  // Play entrance animation only on very first render, then never again
+  const listEl = document.getElementById('request-list');
+  if (_firstRender && filtered.length) {
+    listEl.classList.add('cards-enter');
+    _firstRender = false;
+    // Remove class after animations finish so re-renders don't replay
+    setTimeout(() => listEl.classList.remove('cards-enter'), 600);
+  }
 }
 
 function selectRequest(id) {
@@ -2676,7 +2692,8 @@ function selectRequest(id) {
     const isTrustpilot  = pid.startsWith('tp_') || p._source === 'trustpilot';
     const isSteam       = pid.startsWith('st_') || p._source === 'steam';
     const isYouTube     = pid.startsWith('yt_') || p._source === 'youtube';
-    const isStore       = isAppStore || isGooglePlay || isTrustpilot || isSteam || isYouTube;
+    const isBBB         = pid.startsWith('bb_') || p._source === 'bbb';
+    const isStore       = isAppStore || isGooglePlay || isTrustpilot || isSteam || isYouTube || isBBB;
     const redditUrl    = isStore ? null : `https://reddit.com${p.permalink||''}`;
     const topComment   = p.top_comments?.[0];
     // Date formatting
@@ -2685,12 +2702,12 @@ function selectRequest(id) {
       : '';
 
     const sourceEmoji = isAppStore ? 'Apple App Store' : isGooglePlay ? 'Google Play'
-      : isTrustpilot ? 'Trustpilot' : isSteam ? 'Steam' : isYouTube ? 'YouTube' : null;
+      : isTrustpilot ? 'Trustpilot' : isSteam ? 'Steam' : isYouTube ? 'YouTube' : isBBB ? 'BBB' : null;
     const scoreLabel = sourceEmoji
       ? `${sourceEmoji} · ${dateStr}`
       : `↑ ${(p.score||0).toLocaleString()} · reddit.com · ${dateStr}`;
     const preview = isStore ? p.selftext : (topComment ? topComment.text : null);
-    const title = sanitize(p.title) || (isAppStore ? 'App Store Review' : isGooglePlay ? 'Google Play Review' : isTrustpilot ? 'Trustpilot Review' : isSteam ? 'Steam Review' : isYouTube ? 'YouTube Comment' : pid);
+    const title = sanitize(p.title) || (isAppStore ? 'App Store Review' : isGooglePlay ? 'Google Play Review' : isTrustpilot ? 'Trustpilot Review' : isSteam ? 'Steam Review' : isYouTube ? 'YouTube Comment' : isBBB ? 'BBB Complaint' : pid);
 
     const inner = `
       <div class="thread-title">${title}</div>

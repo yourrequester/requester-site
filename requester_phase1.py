@@ -105,6 +105,8 @@ STEAM_APPS            = _cfg.get("steam_apps", [])
 STEAM_COUNT           = int(_cfg.get("steam_count", 150))
 YOUTUBE_SEARCHES      = _cfg.get("youtube_searches", [])
 YOUTUBE_MAX_RESULTS   = int(_cfg.get("youtube_max_results", 100))
+BBB_COMPANIES         = _cfg.get("bbb_companies", [])
+BBB_PAGES             = int(_cfg.get("bbb_pages", 3))
 GOOGLE_TRENDS_BOOST   = bool(_cfg.get("google_trends_boost", True))
 TARGET_NAME           = _cfg.get("target_name", "")
 
@@ -682,6 +684,102 @@ def fetch_youtube_comments(search_query, max_results=100, api_key=None):
     return results
 
 
+# ── BBB Complaints Fetcher ────────────────────────────────────────────────────
+
+def fetch_bbb_complaints(profile_url, company_name, max_pages=3):
+    """
+    Fetch complaints from the Better Business Bureau.
+    profile_url: full BBB profile URL, e.g.
+      "https://www.bbb.org/us/ga/atlanta/profile/airlines/delta-air-lines-0443-3049"
+    No API key needed — parses embedded JSON from server-rendered pages.
+    """
+    bbb_headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    results = []
+
+    for page in range(1, max_pages + 1):
+        url = f"{profile_url}/complaints?page={page}"
+        try:
+            time.sleep(2)
+            resp = requests.get(url, headers=bbb_headers, timeout=15)
+            if resp.status_code != 200:
+                print(f"    ✗ BBB page {page}: HTTP {resp.status_code}")
+                break
+
+            # Extract __PRELOADED_STATE__ JSON
+            match = re.search(
+                r'window\.__PRELOADED_STATE__\s*=\s*({.*?});\s*</script>',
+                resp.text,
+                re.DOTALL,
+            )
+            if not match:
+                print(f"    ✗ BBB page {page}: no preloaded state found")
+                break
+
+            data = json.loads(match.group(1))
+            items = (
+                data.get("businessProfile", {})
+                    .get("customerComplaints", {})
+                    .get("items", [])
+            )
+            if not items:
+                break
+
+            if page == 1:
+                total = data["businessProfile"]["customerComplaints"].get("numFound", 0)
+                print(f"    BBB: {total} total complaints for {company_name}")
+
+            for item in items:
+                text = (item.get("text") or "").strip()
+                if not text or len(text) < 30:
+                    continue
+
+                dt = item.get("date", {})
+                try:
+                    created_utc = datetime(
+                        int(dt.get("year", 2024)),
+                        int(dt.get("month", 1)),
+                        int(dt.get("day", 1)),
+                        tzinfo=timezone.utc,
+                    ).timestamp()
+                except (ValueError, TypeError):
+                    created_utc = time.time()
+
+                cid = item.get("id", f"bbb_{company_name}_{len(results)}")
+                complaint_type = item.get("type", "")
+                status = item.get("status", "")
+
+                results.append({
+                    "id":          f"bb_{cid}",
+                    "title":       text[:80] + "…" if len(text) > 80 else text,
+                    "selftext":    text[:600],
+                    "score":       15,  # BBB complaints carry weight
+                    "created_utc": created_utc,
+                    "permalink":   url,
+                    "_source":     "bbb",
+                    "_subreddit":  "bbb",
+                    "_app_name":   company_name,
+                    "_rating":     1,
+                    "_bbb_type":   complaint_type,
+                    "_bbb_status": status,
+                    "top_comments": [],
+                })
+
+        except Exception as e:
+            print(f"    ✗ BBB page {page} error: {e}")
+            break
+
+    print(f"    ✓ {len(results)} BBB complaints fetched for {company_name}")
+    return results
+
+
 # ── Google Trends Gravity Booster ─────────────────────────────────────────────
 
 def fetch_google_trends_boost(demands, target_name):
@@ -797,6 +895,8 @@ def _build_canonical_names():
         names.add(co["name"])
     for app in STEAM_APPS:
         names.add(app["name"])
+    for co in BBB_COMPANIES:
+        names.add(co["name"])
     if TARGET_NAME:
         names.add(TARGET_NAME)
     return names
@@ -889,7 +989,7 @@ def extract_demands_with_ai(posts):
         d["slug"] = _make_demand_slug(d.get("subject", ""), d.get("action", ""))
 
     # ── Fix source_subreddit based on actual post_id prefixes ────────────────
-    PREFIX_SOURCE = {"as_":"appstore","gp_":"googleplay","tp_":"trustpilot","st_":"steam","yt_":"youtube"}
+    PREFIX_SOURCE = {"as_":"appstore","gp_":"googleplay","tp_":"trustpilot","st_":"steam","yt_":"youtube","bb_":"bbb"}
     for d in demands:
         pids = d.get("post_ids", [])
         found_sources = set()
@@ -939,6 +1039,7 @@ def _extract_batch(client, posts, batch_num, total_batches):
         "trustpilot": ("TRUSTPILOT", "tp_"),
         "steam":      ("STEAM", "st_"),
         "youtube":    ("YOUTUBE COMMENT", "yt_"),
+        "bbb":        ("BBB COMPLAINT", "bb_"),
     }
 
     id_lines = []
@@ -962,6 +1063,7 @@ def _extract_batch(client, posts, batch_num, total_batches):
     if "trustpilot" in sources_present: extra_sources.append("Trustpilot")
     if "steam"      in sources_present: extra_sources.append("Steam")
     if "youtube"    in sources_present: extra_sources.append("YouTube")
+    if "bbb"        in sources_present: extra_sources.append("Better Business Bureau (BBB)")
     sources_str = subs_str
     if extra_sources:
         sources_str += " and " + ", ".join(extra_sources)
@@ -971,8 +1073,8 @@ def _extract_batch(client, posts, batch_num, total_batches):
         non_reddit_section = """
 NON-REDDIT SOURCES:
 - "review_text" or "comment_text" field contains the actual content (use this, not the title)
-- IDs starting with as_=App Store, gp_=Google Play, tp_=Trustpilot, st_=Steam, yt_=YouTube
-- Set source_subreddit to the platform name (appstore/googleplay/trustpilot/steam/youtube)
+- IDs starting with as_=App Store, gp_=Google Play, tp_=Trustpilot, st_=Steam, yt_=YouTube, bb_=BBB
+- Set source_subreddit to the platform name (appstore/googleplay/trustpilot/steam/youtube/bbb)
 - All are valid demand signals — extract complaints and requests from them just like Reddit posts
 """
 
@@ -1342,6 +1444,21 @@ def run():
                 for r in yt_list: post_lookup[r["id"]] = r
             print(f"  Total YouTube comments added: {len(youtube_comments)}")
 
+    # ── BBB complaints ingestion ─────────────────────────────────────────────
+    bbb_complaints = []
+    if BBB_COMPANIES:
+        print(f"\n📋 Fetching BBB complaints...")
+        for company in BBB_COMPANIES:
+            name = company.get("name", "")
+            url  = company.get("url", "")
+            if not url:
+                continue
+            clist = fetch_bbb_complaints(url, name, max_pages=BBB_PAGES)
+            bbb_complaints.extend(clist)
+            for r in clist:
+                post_lookup[r["id"]] = r
+        print(f"  Total BBB complaints added: {len(bbb_complaints)}")
+
     # ── Merge all non-Reddit sources ────────────────────────────────────────
     # External reviews are already low-rating (1-3★) complaints — no intent
     # filter needed. Applying one was dropping valid complaints that didn't
@@ -1355,12 +1472,12 @@ def run():
 
     all_external = (_cap(appstore_reviews) + _cap(googleplay_reviews)
                     + _cap(trustpilot_reviews) + _cap(steam_reviews)
-                    + youtube_comments[:200])
+                    + youtube_comments[:200] + _cap(bbb_complaints))
 
     # Breakdown for logging
     def _count_src(lst, src): return sum(1 for r in lst if r.get("_source") == src)
     ext_counts = {s: _count_src(all_external, s)
-                  for s in ("appstore","googleplay","trustpilot","steam","youtube")}
+                  for s in ("appstore","googleplay","trustpilot","steam","youtube","bbb")}
     ext_summary = ", ".join(f"{v} {k}" for k, v in ext_counts.items() if v > 0)
     print(f"\n  External reviews: {len(all_external)} ({ext_summary})")
 
@@ -1420,7 +1537,7 @@ def run():
                 print(f"  └ {src_label} [{s:,}] {t}")
 
     # ── Assemble output ───────────────────────────────────────────────────────
-    NON_REDDIT_SOURCES = {"appstore","googleplay","trustpilot","steam","youtube"}
+    NON_REDDIT_SOURCES = {"appstore","googleplay","trustpilot","steam","youtube","bbb"}
     demanded_pids = {pid for d in demands for pid in d.get("post_ids",[])}
 
     output = {
@@ -1437,6 +1554,7 @@ def run():
         "trustpilot_reviews":  len(trustpilot_reviews),
         "steam_reviews":       len(steam_reviews),
         "youtube_comments":    len(youtube_comments),
+        "bbb_complaints":      len(bbb_complaints),
         "requests_found":      len(demands),
         "leaderboard":         demands[:200],
         "post_lookup": {
