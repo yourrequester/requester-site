@@ -1608,7 +1608,7 @@ def run():
     # ── Google Play ingestion ─────────────────────────────────────────────────
     googleplay_reviews = []
     if GOOGLE_PLAY_APPS:
-        print(f"\n▶ Fetching Google Play reviews...")
+        print(f"\nFetching Google Play reviews...")
         for app_cfg in GOOGLE_PLAY_APPS:
             gp_list = fetch_google_play_reviews(
                 app_cfg["app_id"], app_cfg["name"],

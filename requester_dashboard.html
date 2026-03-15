@@ -1112,6 +1112,11 @@ body[data-theme="dark"] a.thread-card:hover {
   border-color: var(--accent);
   color: white;
 }
+.upvote-btn-lg.voted:hover {
+  background: #b84008;
+  border-color: #b84008;
+  color: white;
+}
 
 /* ── Auth area in header ── */
 .auth-area {
@@ -1370,7 +1375,7 @@ body[data-theme="dark"] a.thread-card:hover {
 
 <!-- Loading / error state (shown only if data fetch fails) -->
 <div id="loading-state" style="display:none;text-align:center;padding:80px 20px;color:var(--ink-mid);font-size:15px;">
-  <div style="font-size:32px;margin-bottom:16px;">⏳</div>
+  <div style="font-size:24px;margin-bottom:16px;font-weight:500;">...</div>
   <div style="font-weight:500;margin-bottom:8px;">Data is being refreshed</div>
   <div style="font-size:13px;">Check back shortly — results update automatically every few hours.</div>
 </div>
@@ -2853,7 +2858,7 @@ async function openSettings() {
     populateSettings(_currentConfig);
   } catch(e) {
     document.getElementById('settings-status').style.color = '#c0392b';
-    document.getElementById('settings-status').textContent = '⚠ ' + e.message;
+    document.getElementById('settings-status').textContent = 'Error: ' + e.message;
     // Still populate with defaults so panel is usable
     populateSettings({
       subreddits: ['netflix','cordcutters'],
@@ -2964,7 +2969,7 @@ async function saveSettings() {
 
   if (!cfg.subreddits.length && !cfg.appstore_apps.length && !cfg.googleplay_apps.length) {
     statusEl.style.color = '#c0392b';
-    statusEl.textContent = '⚠ Add at least one subreddit or app before saving.';
+    statusEl.textContent = 'Add at least one subreddit or app before saving.';
     return;
   }
 
@@ -2976,12 +2981,12 @@ async function saveSettings() {
     });
     if (!res.ok) throw new Error(await res.text());
     statusEl.style.color = '#1a7a4a';
-    statusEl.textContent = '✓ Config saved! Run the scraper to use the new targets.';
+    statusEl.textContent = 'Config saved! Run the scraper to use the new targets.';
     _currentConfig = cfg;
     setTimeout(closeSettings, 2000);
   } catch(e) {
     statusEl.style.color = '#c0392b';
-    statusEl.textContent = '⚠ Save failed: ' + e.message;
+    statusEl.textContent = 'Save failed: ' + e.message;
   }
 }
 </script>
