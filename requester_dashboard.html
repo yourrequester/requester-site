@@ -1032,6 +1032,7 @@ body[data-theme="dark"] a.thread-card:hover {
 .source-badge.youtube     { background: #fce4ec; color: #c62828; border: 1px solid #f48fb1; }
 .source-badge.reddit   { background: #fff2ea; border-color: #f5cdb8; color: #c04a10; }
 .source-badge.bbb      { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+.source-badge.producthunt { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
 
 .no-results {
   text-align: center;
@@ -2344,6 +2345,7 @@ const PLATFORM_ICONS = {
   youtube:    { label: 'YouTube' },
   steam:      { label: 'Steam' },
   bbb:        { label: 'BBB' },
+  producthunt:{ label: 'Product Hunt' },
 };
 
 function buildPlatformWidget(data) {
@@ -2355,6 +2357,7 @@ function buildPlatformWidget(data) {
     youtube:    (data.youtube_comments   || 0),
     steam:      (data.steam_reviews      || 0),
     bbb:        (data.bbb_complaints     || 0),
+    producthunt:(data.ph_comments        || 0),
   };
   const rows = Object.entries(sourceCounts)
     .filter(([,n]) => n > 0)
@@ -2428,7 +2431,7 @@ function sanitize(text) {
 // Helper: get the source keys for one demand (used by both pills and filter)
 function _demandSources(d) {
   const s = new Set();
-  const PREFIX_MAP = { 'as_':'__appstore__','gp_':'__googleplay__','tp_':'__trustpilot__','st_':'__steam__','yt_':'__youtube__' };
+  const PREFIX_MAP = { 'as_':'__appstore__','gp_':'__googleplay__','tp_':'__trustpilot__','st_':'__steam__','yt_':'__youtube__','bb_':'__bbb__','ph_':'__producthunt__' };
   for (const pid of (d.post_ids || [])) {
     let matched = false;
     for (const [pre, tag] of Object.entries(PREFIX_MAP)) {
@@ -2556,7 +2559,7 @@ function resetHome() {
   render();
 }
 
-const _PLATFORM_PREFIX = { appstore:'as_', googleplay:'gp_', trustpilot:'tp_', steam:'st_', youtube:'yt_' };
+const _PLATFORM_PREFIX = { appstore:'as_', googleplay:'gp_', trustpilot:'tp_', steam:'st_', youtube:'yt_', bbb:'bb_', producthunt:'ph_' };
 
 function getFiltered() {
   // Shared-link mode: show only the one linked request
@@ -2578,7 +2581,7 @@ function getFiltered() {
       // Check source_subreddit first (catches merged demands)
       const ss = d.source_subreddit || '';
       if (activePlatforms.has(ss)) matchPlatform = true;
-      if (!matchPlatform && activePlatforms.has('reddit') && ss && !['appstore','googleplay','trustpilot','steam','youtube'].includes(ss)) matchPlatform = true;
+      if (!matchPlatform && activePlatforms.has('reddit') && ss && !['appstore','googleplay','trustpilot','steam','youtube','bbb','producthunt'].includes(ss)) matchPlatform = true;
 
       // Then check post_id prefixes
       if (!matchPlatform) {
@@ -2625,9 +2628,9 @@ function render() {
             <span class="card-rank ${isTop?'top':''}">#${i+1}</span>
             <span class="card-subject">${d.subject||'Unknown'}</span>
             ${(() => {
-              const NON_RD = ['as_','gp_','tp_','st_','yt_'];
+              const NON_RD = ['as_','gp_','tp_','st_','yt_','bb_','ph_'];
               const hasReddit = (d.post_ids||[]).some(id => !NON_RD.some(p=>id.startsWith(p)));
-              const sub = d.source_subreddit && !['appstore','googleplay','trustpilot','steam','youtube'].includes(d.source_subreddit) ? d.source_subreddit : '';
+              const sub = d.source_subreddit && !['appstore','googleplay','trustpilot','steam','youtube','bbb','producthunt'].includes(d.source_subreddit) ? d.source_subreddit : '';
               return hasReddit ? `<span class="source-badge reddit">${sub ? 'r/'+cleanSub(sub) : 'Reddit'}</span>` : '';
             })()}
             ${(d.post_ids||[]).some(id=>id.startsWith('as_')) || d.source_subreddit === 'appstore' ? `<span class="source-badge appstore">Apple App Store</span>` : ''}
@@ -2636,6 +2639,7 @@ function render() {
             ${(d.post_ids||[]).some(id=>id.startsWith('st_')) || d.source_subreddit === 'steam' ? `<span class="source-badge steam">Steam</span>` : ''}
             ${(d.post_ids||[]).some(id=>id.startsWith('yt_')) || d.source_subreddit === 'youtube' ? `<span class="source-badge youtube">YouTube</span>` : ''}
             ${(d.post_ids||[]).some(id=>id.startsWith('bb_')) || d.source_subreddit === 'bbb' ? `<span class="source-badge bbb">BBB</span>` : ''}
+            ${(d.post_ids||[]).some(id=>id.startsWith('ph_')) || d.source_subreddit === 'producthunt' ? `<span class="source-badge producthunt">Product Hunt</span>` : ''}
           </div>
           <div class="card-action">${sanitize(d.action||'No description')}</div>
           ${d.summary ? `<div class="card-summary">${sanitize(d.summary||'')}…</div>` : ''}
@@ -2693,7 +2697,8 @@ function selectRequest(id) {
     const isSteam       = pid.startsWith('st_') || p._source === 'steam';
     const isYouTube     = pid.startsWith('yt_') || p._source === 'youtube';
     const isBBB         = pid.startsWith('bb_') || p._source === 'bbb';
-    const isStore       = isAppStore || isGooglePlay || isTrustpilot || isSteam || isYouTube || isBBB;
+    const isPH          = pid.startsWith('ph_') || p._source === 'producthunt';
+    const isStore       = isAppStore || isGooglePlay || isTrustpilot || isSteam || isYouTube || isBBB || isPH;
     const redditUrl    = isStore ? null : `https://reddit.com${p.permalink||''}`;
     const topComment   = p.top_comments?.[0];
     // Date formatting
@@ -2702,12 +2707,12 @@ function selectRequest(id) {
       : '';
 
     const sourceEmoji = isAppStore ? 'Apple App Store' : isGooglePlay ? 'Google Play'
-      : isTrustpilot ? 'Trustpilot' : isSteam ? 'Steam' : isYouTube ? 'YouTube' : isBBB ? 'BBB' : null;
+      : isTrustpilot ? 'Trustpilot' : isSteam ? 'Steam' : isYouTube ? 'YouTube' : isBBB ? 'BBB' : isPH ? 'Product Hunt' : null;
     const scoreLabel = sourceEmoji
       ? `${sourceEmoji} · ${dateStr}`
       : `↑ ${(p.score||0).toLocaleString()} · reddit.com · ${dateStr}`;
     const preview = isStore ? p.selftext : (topComment ? topComment.text : null);
-    const title = sanitize(p.title) || (isAppStore ? 'App Store Review' : isGooglePlay ? 'Google Play Review' : isTrustpilot ? 'Trustpilot Review' : isSteam ? 'Steam Review' : isYouTube ? 'YouTube Comment' : isBBB ? 'BBB Complaint' : pid);
+    const title = sanitize(p.title) || (isAppStore ? 'App Store Review' : isGooglePlay ? 'Google Play Review' : isTrustpilot ? 'Trustpilot Review' : isSteam ? 'Steam Review' : isYouTube ? 'YouTube Comment' : isBBB ? 'BBB Complaint' : isPH ? 'Product Hunt Comment' : pid);
 
     const inner = `
       <div class="thread-title">${title}</div>

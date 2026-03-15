@@ -8,6 +8,8 @@ Sources:
   ✅ Trustpilot      — public HTML scraping, no key needed
   ✅ Steam           — public JSON API, no key needed
   ✅ YouTube         — YouTube Data API v3 (free 10k units/day, needs key)
+  ✅ BBB             — embedded JSON from bbb.org, no key needed
+  ✅ Product Hunt    — GraphQL API v2 (free developer token)
   ✅ Google Trends   — pytrends (unofficial, free, no key)
 
 Usage:
@@ -19,6 +21,10 @@ Requirements:
 YouTube (optional, free):
     Add YOUTUBE_API_KEY to .env — get one free at console.cloud.google.com
     Enable "YouTube Data API v3" on the project (no billing required for free tier)
+
+Product Hunt (optional, free):
+    Add PRODUCTHUNT_API_TOKEN to .env — get one free at producthunt.com > profile > API Dashboard
+    Create an app, then click "Create Token" at the bottom (read-only public scope)
 """
 
 import requests
@@ -107,6 +113,8 @@ YOUTUBE_SEARCHES      = _cfg.get("youtube_searches", [])
 YOUTUBE_MAX_RESULTS   = int(_cfg.get("youtube_max_results", 100))
 BBB_COMPANIES         = _cfg.get("bbb_companies", [])
 BBB_PAGES             = int(_cfg.get("bbb_pages", 3))
+PH_PRODUCTS           = _cfg.get("producthunt_products", [])
+PH_MAX_COMMENTS       = int(_cfg.get("producthunt_max_comments", 50))
 GOOGLE_TRENDS_BOOST   = bool(_cfg.get("google_trends_boost", True))
 TARGET_NAME           = _cfg.get("target_name", "")
 
@@ -780,6 +788,179 @@ def fetch_bbb_complaints(profile_url, company_name, max_pages=3):
     return results
 
 
+# ── Product Hunt Comments Fetcher ─────────────────────────────────────────────
+
+_PH_API = "https://api.producthunt.com/v2/api/graphql"
+
+def fetch_producthunt_comments(product_slug, company_name, max_comments=50, api_token=None):
+    """
+    Fetch comments/reviews from Product Hunt via the free GraphQL API.
+    product_slug: the slug from the product URL, e.g. "netflix" for producthunt.com/products/netflix
+    api_token: developer token from producthunt.com API Dashboard (free)
+    """
+    if not api_token:
+        return []
+
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json",
+        "User-Agent": HEADERS["User-Agent"],
+    }
+    results = []
+
+    # Step 1: Find recent posts for this product slug
+    posts_query = {
+        "query": """
+        query($slug: String!) {
+          product(slug: $slug) {
+            name
+            posts(first: 5, order: NEWEST) {
+              edges {
+                node {
+                  id
+                  name
+                  tagline
+                  votesCount
+                  commentsCount
+                  reviewsRating
+                  createdAt
+                  url
+                }
+              }
+            }
+          }
+        }
+        """,
+        "variables": {"slug": product_slug}
+    }
+
+    try:
+        resp = requests.post(_PH_API, headers=headers, json=posts_query, timeout=15)
+        if resp.status_code == 401:
+            print(f"    ✗ Product Hunt: auth failed — check PRODUCTHUNT_API_TOKEN")
+            return []
+        if resp.status_code != 200:
+            print(f"    ✗ Product Hunt: HTTP {resp.status_code} for {product_slug}")
+            return []
+
+        data = resp.json()
+        product = (data.get("data") or {}).get("product")
+        if not product:
+            print(f"    ✗ Product Hunt: product '{product_slug}' not found")
+            return []
+
+        posts = product.get("posts", {}).get("edges", [])
+        if not posts:
+            print(f"    ✗ Product Hunt: no posts for '{product_slug}'")
+            return []
+
+        product_name = product.get("name", company_name)
+        print(f"    Product Hunt: {len(posts)} posts found for {product_name}")
+
+    except Exception as e:
+        print(f"    ✗ Product Hunt posts error: {e}")
+        return []
+
+    # Step 2: Fetch comments from each post
+    for post_edge in posts:
+        post = post_edge.get("node", {})
+        post_id = post.get("id", "")
+        post_url = post.get("url", "")
+        post_name = post.get("name", product_slug)
+
+        if not post.get("commentsCount", 0):
+            continue
+
+        # Paginate comments (max 20 per request per API rules)
+        after_cursor = None
+        fetched_for_post = 0
+        remaining = max_comments - len(results)
+        if remaining <= 0:
+            break
+
+        while fetched_for_post < remaining:
+            comments_query = {
+                "query": """
+                query($postId: ID!, $first: Int!, $after: String) {
+                  post(id: $postId) {
+                    comments(first: $first, after: $after) {
+                      pageInfo { hasNextPage endCursor }
+                      edges {
+                        node {
+                          id
+                          body
+                          votesCount
+                          createdAt
+                          user { username }
+                        }
+                      }
+                    }
+                  }
+                }
+                """,
+                "variables": {
+                    "postId": post_id,
+                    "first": min(20, remaining - fetched_for_post),
+                    "after": after_cursor,
+                }
+            }
+
+            try:
+                time.sleep(1)  # polite delay
+                cresp = requests.post(_PH_API, headers=headers, json=comments_query, timeout=15)
+                if cresp.status_code != 200:
+                    break
+
+                cdata = cresp.json()
+                comments_data = (cdata.get("data") or {}).get("post", {}).get("comments", {})
+                edges = comments_data.get("edges", [])
+                if not edges:
+                    break
+
+                for edge in edges:
+                    c = edge.get("node", {})
+                    body = (c.get("body") or "").strip()
+                    if not body or len(body) < 20:
+                        continue
+
+                    try:
+                        created_utc = datetime.fromisoformat(
+                            c.get("createdAt", "").replace("Z", "+00:00")
+                        ).timestamp()
+                    except (ValueError, TypeError):
+                        created_utc = time.time()
+
+                    username = (c.get("user") or {}).get("username", "anonymous")
+                    cid = c.get("id", f"ph_{product_slug}_{len(results)}")
+
+                    results.append({
+                        "id":          f"ph_{cid}",
+                        "title":       f"Comment on {post_name}",
+                        "selftext":    body[:600],
+                        "score":       c.get("votesCount", 0) + 1,
+                        "created_utc": created_utc,
+                        "permalink":   post_url,
+                        "_source":     "producthunt",
+                        "_subreddit":  "producthunt",
+                        "_app_name":   company_name,
+                        "_rating":     None,
+                        "top_comments": [],
+                    })
+                    fetched_for_post += 1
+
+                page_info = comments_data.get("pageInfo", {})
+                if not page_info.get("hasNextPage"):
+                    break
+                after_cursor = page_info.get("endCursor")
+
+            except Exception as e:
+                print(f"    ✗ Product Hunt comments error: {e}")
+                break
+
+    print(f"    ✓ {len(results)} Product Hunt comments fetched for {company_name}")
+    return results
+
+
 # ── Google Trends Gravity Booster ─────────────────────────────────────────────
 
 def fetch_google_trends_boost(demands, target_name):
@@ -989,7 +1170,7 @@ def extract_demands_with_ai(posts):
         d["slug"] = _make_demand_slug(d.get("subject", ""), d.get("action", ""))
 
     # ── Fix source_subreddit based on actual post_id prefixes ────────────────
-    PREFIX_SOURCE = {"as_":"appstore","gp_":"googleplay","tp_":"trustpilot","st_":"steam","yt_":"youtube","bb_":"bbb"}
+    PREFIX_SOURCE = {"as_":"appstore","gp_":"googleplay","tp_":"trustpilot","st_":"steam","yt_":"youtube","bb_":"bbb","ph_":"producthunt"}
     for d in demands:
         pids = d.get("post_ids", [])
         found_sources = set()
@@ -1040,6 +1221,7 @@ def _extract_batch(client, posts, batch_num, total_batches):
         "steam":      ("STEAM", "st_"),
         "youtube":    ("YOUTUBE COMMENT", "yt_"),
         "bbb":        ("BBB COMPLAINT", "bb_"),
+        "producthunt":("PRODUCT HUNT COMMENT", "ph_"),
     }
 
     id_lines = []
@@ -1064,6 +1246,7 @@ def _extract_batch(client, posts, batch_num, total_batches):
     if "steam"      in sources_present: extra_sources.append("Steam")
     if "youtube"    in sources_present: extra_sources.append("YouTube")
     if "bbb"        in sources_present: extra_sources.append("Better Business Bureau (BBB)")
+    if "producthunt" in sources_present: extra_sources.append("Product Hunt")
     sources_str = subs_str
     if extra_sources:
         sources_str += " and " + ", ".join(extra_sources)
@@ -1073,8 +1256,8 @@ def _extract_batch(client, posts, batch_num, total_batches):
         non_reddit_section = """
 NON-REDDIT SOURCES:
 - "review_text" or "comment_text" field contains the actual content (use this, not the title)
-- IDs starting with as_=App Store, gp_=Google Play, tp_=Trustpilot, st_=Steam, yt_=YouTube, bb_=BBB
-- Set source_subreddit to the platform name (appstore/googleplay/trustpilot/steam/youtube/bbb)
+- IDs starting with as_=App Store, gp_=Google Play, tp_=Trustpilot, st_=Steam, yt_=YouTube, bb_=BBB, ph_=Product Hunt
+- Set source_subreddit to the platform name (appstore/googleplay/trustpilot/steam/youtube/bbb/producthunt)
 - All are valid demand signals — extract complaints and requests from them just like Reddit posts
 """
 
@@ -1459,6 +1642,26 @@ def run():
                 post_lookup[r["id"]] = r
         print(f"  Total BBB complaints added: {len(bbb_complaints)}")
 
+    # ── Product Hunt comments ingestion ──────────────────────────────────────
+    ph_comments = []
+    ph_token = os.getenv("PRODUCTHUNT_API_TOKEN", "")
+    if PH_PRODUCTS and ph_token:
+        print(f"\n🏹 Fetching Product Hunt comments...")
+        for prod in PH_PRODUCTS:
+            name = prod.get("name", "")
+            slug = prod.get("slug", "")
+            if not slug:
+                continue
+            clist = fetch_producthunt_comments(slug, name,
+                                               max_comments=PH_MAX_COMMENTS,
+                                               api_token=ph_token)
+            ph_comments.extend(clist)
+            for r in clist:
+                post_lookup[r["id"]] = r
+        print(f"  Total Product Hunt comments added: {len(ph_comments)}")
+    elif PH_PRODUCTS and not ph_token:
+        print(f"\n🏹 Product Hunt: skipped (no PRODUCTHUNT_API_TOKEN in .env)")
+
     # ── Merge all non-Reddit sources ────────────────────────────────────────
     # External reviews are already low-rating (1-3★) complaints — no intent
     # filter needed. Applying one was dropping valid complaints that didn't
@@ -1472,12 +1675,13 @@ def run():
 
     all_external = (_cap(appstore_reviews) + _cap(googleplay_reviews)
                     + _cap(trustpilot_reviews) + _cap(steam_reviews)
-                    + youtube_comments[:200] + _cap(bbb_complaints))
+                    + youtube_comments[:200] + _cap(bbb_complaints)
+                    + ph_comments[:200])
 
     # Breakdown for logging
     def _count_src(lst, src): return sum(1 for r in lst if r.get("_source") == src)
     ext_counts = {s: _count_src(all_external, s)
-                  for s in ("appstore","googleplay","trustpilot","steam","youtube","bbb")}
+                  for s in ("appstore","googleplay","trustpilot","steam","youtube","bbb","producthunt")}
     ext_summary = ", ".join(f"{v} {k}" for k, v in ext_counts.items() if v > 0)
     print(f"\n  External reviews: {len(all_external)} ({ext_summary})")
 
@@ -1537,7 +1741,7 @@ def run():
                 print(f"  └ {src_label} [{s:,}] {t}")
 
     # ── Assemble output ───────────────────────────────────────────────────────
-    NON_REDDIT_SOURCES = {"appstore","googleplay","trustpilot","steam","youtube","bbb"}
+    NON_REDDIT_SOURCES = {"appstore","googleplay","trustpilot","steam","youtube","bbb","producthunt"}
     demanded_pids = {pid for d in demands for pid in d.get("post_ids",[])}
 
     output = {
@@ -1555,6 +1759,7 @@ def run():
         "steam_reviews":       len(steam_reviews),
         "youtube_comments":    len(youtube_comments),
         "bbb_complaints":      len(bbb_complaints),
+        "ph_comments":         len(ph_comments),
         "requests_found":      len(demands),
         "leaderboard":         demands[:200],
         "post_lookup": {

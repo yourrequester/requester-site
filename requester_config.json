@@ -120,5 +120,22 @@
     { "name": "eBay",       "url": "https://www.bbb.org/us/ca/san-jose/profile/online-shopping/ebay-inc-1216-204015" },
     { "name": "Coinbase",   "url": "https://www.bbb.org/us/ca/san-francisco/profile/cryptocurrency-exchange/coinbase-inc-1116-454104" }
   ],
-  "bbb_pages": 3
+  "bbb_pages": 3,
+  "producthunt_products": [
+    { "name": "Netflix",    "slug": "netflix" },
+    { "name": "Spotify",    "slug": "spotify" },
+    { "name": "Disney+",    "slug": "disney-plus" },
+    { "name": "DoorDash",   "slug": "doordash" },
+    { "name": "Uber",       "slug": "uber" },
+    { "name": "Uber Eats",  "slug": "uber-eats" },
+    { "name": "Lyft",       "slug": "lyft" },
+    { "name": "Chase",      "slug": "chase" },
+    { "name": "PayPal",     "slug": "paypal" },
+    { "name": "Cash App",   "slug": "cash-app" },
+    { "name": "Venmo",      "slug": "venmo" },
+    { "name": "Amazon",     "slug": "amazon" },
+    { "name": "eBay",       "slug": "ebay" },
+    { "name": "Coinbase",   "slug": "coinbase" }
+  ],
+  "producthunt_max_comments": 50
 }
