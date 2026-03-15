@@ -1,16 +1,16 @@
 """
-REQUESTER - Phase 4 — Multi-Source Community Intelligence
+REQUESTER - Phase 4 -- Multi-Source Community Intelligence
 ==========================================================
 Sources:
-  ✅ Reddit          — public .json endpoints, no key needed
-  ✅ Apple App Store — iTunes RSS feed, no key needed
-  ✅ Google Play     — google-play-scraper, no key needed
-  ✅ Trustpilot      — public HTML scraping, no key needed
-  ✅ Steam           — public JSON API, no key needed
-  ✅ YouTube         — YouTube Data API v3 (free 10k units/day, needs key)
-  ✅ BBB             — embedded JSON from bbb.org, no key needed
-  ✅ Product Hunt    — GraphQL API v2 (free developer token)
-  ✅ Google Trends   — pytrends (unofficial, free, no key)
+  -Reddit          -- public .json endpoints, no key needed
+  -Apple App Store -- iTunes RSS feed, no key needed
+  -Google Play     -- google-play-scraper, no key needed
+  -Trustpilot      -- public HTML scraping, no key needed
+  -Steam           -- public JSON API, no key needed
+  -YouTube         -- YouTube Data API v3 (free 10k units/day, needs key)
+  -BBB             -- embedded JSON from bbb.org, no key needed
+  -Product Hunt    -- GraphQL API v2 (free developer token)
+  -Google Trends   -- pytrends (unofficial, free, no key)
 
 Usage:
     python requester_phase1.py
@@ -19,11 +19,11 @@ Requirements:
     pip install requests anthropic python-dotenv google-play-scraper beautifulsoup4 pytrends
 
 YouTube (optional, free):
-    Add YOUTUBE_API_KEY to .env — get one free at console.cloud.google.com
+    Add YOUTUBE_API_KEY to .env -- get one free at console.cloud.google.com
     Enable "YouTube Data API v3" on the project (no billing required for free tier)
 
 Product Hunt (optional, free):
-    Add PRODUCTHUNT_API_TOKEN to .env — get one free at producthunt.com > profile > API Dashboard
+    Add PRODUCTHUNT_API_TOKEN to .env -- get one free at producthunt.com > profile > API Dashboard
     Create an app, then click "Create Token" at the bottom (read-only public scope)
 """
 
@@ -85,10 +85,10 @@ def _load_config():
             # Fill in any new keys from defaults without overwriting user's values
             for k, v in _DEFAULT_CONFIG.items():
                 cfg.setdefault(k, v)
-            print(f"  ✓ Loaded config from requester_config.json")
+            print(f"  [OK] Loaded config from requester_config.json")
             return cfg
         except Exception as e:
-            print(f"  ⚠ Config file error ({e}), using defaults")
+            print(f"  [WARN] Config file error ({e}), using defaults")
     return dict(_DEFAULT_CONFIG)
 
 _cfg = _load_config()
@@ -212,10 +212,10 @@ def _get_reddit_token():
         data = resp.json()
         _reddit_token = data["access_token"]
         _reddit_token_expiry = time.time() + data.get("expires_in", 3600)
-        print(f"  🔑 Reddit OAuth token obtained (expires in {data.get('expires_in', '?')}s)")
+        print(f"  Reddit OAuth token obtained (expires in {data.get('expires_in', '?')}s)")
         return _reddit_token
     except Exception as e:
-        print(f"  ⚠  Reddit OAuth failed: {e}")
+        print(f"  [WARN] Reddit OAuth failed: {e}")
         return None
 
 
@@ -232,7 +232,7 @@ def _reddit_get(url, params=None, timeout=20):
         }
         resp = requests.get(oauth_url, headers=headers, params=params, timeout=timeout)
         if resp.status_code == 401:
-            # Token expired — clear and retry once
+            # Token expired -- clear and retry once
             global _reddit_token
             _reddit_token = None
             token = _get_reddit_token()
@@ -241,7 +241,7 @@ def _reddit_get(url, params=None, timeout=20):
                 resp = requests.get(oauth_url, headers=headers, params=params, timeout=timeout)
         return resp
     else:
-        # No OAuth — try public endpoint (works locally, 403 on Actions)
+        # No OAuth -- try public endpoint (works locally, 403 on Actions)
         return requests.get(url, headers=HEADERS, params=params, timeout=timeout)
 
 
@@ -257,18 +257,18 @@ def fetch_posts(subreddit, sort, limit):
             resp = _reddit_get(url, params=params, timeout=20)
             if resp.status_code == 429:
                 wait = int(resp.headers.get("Retry-After", delay or 30))
-                print(f"  ⏳ Rate-limited r/{subreddit}/{sort} — waiting {wait}s")
+                print(f"  Rate-limited r/{subreddit}/{sort} -- waiting {wait}s")
                 time.sleep(wait)
                 continue
             resp.raise_for_status()
             posts = resp.json()["data"]["children"]
-            print(f"  ✓ {len(posts)} posts from r/{subreddit}/{sort}")
+            print(f"  [OK] {len(posts)} posts from r/{subreddit}/{sort}")
             return [p["data"] for p in posts]
         except Exception as e:
             if delay is None:
-                print(f"  ✗ Failed {sort}: {e}")
+                print(f"  [ERR] Failed {sort}: {e}")
                 return []
-            print(f"  ↩ Retry {attempt} r/{subreddit}/{sort} in {delay}s ({e})")
+            print(f"  Retry {attempt} r/{subreddit}/{sort} in {delay}s ({e})")
             time.sleep(delay)
     return []
 
@@ -318,7 +318,7 @@ def fetch_appstore_reviews(app_id, app_name, pages=5, max_rating=3):
     so they flow through the same AI extraction pipeline.
     """
     reviews = []
-    print(f"  📱 Fetching App Store reviews for {app_name} (id={app_id})...")
+    print(f"   Fetching App Store reviews for {app_name} (id={app_id})...")
 
     for page in range(1, pages + 1):
         url = f"https://itunes.apple.com/us/rss/customerreviews/page={page}/id={app_id}/sortBy=mostRecent/json"
@@ -329,7 +329,7 @@ def fetch_appstore_reviews(app_id, app_name, pages=5, max_rating=3):
             data = resp.json()
             entries = data.get("feed", {}).get("entry", [])
 
-            # First entry is app metadata, not a review — skip it
+            # First entry is app metadata, not a review -- skip it
             for entry in entries:
                 if "im:rating" not in entry:
                     continue
@@ -373,10 +373,10 @@ def fetch_appstore_reviews(app_id, app_name, pages=5, max_rating=3):
                 break  # no more pages
 
         except Exception as e:
-            print(f"    ✗ Page {page} failed: {e}")
+            print(f"    [ERR] Page {page} failed: {e}")
             break
 
-    print(f"    ✓ {len(reviews)} low-rated reviews fetched")
+    print(f"    [OK] {len(reviews)} low-rated reviews fetched")
     return reviews
 
 # ── Google Play Fetcher ───────────────────────────────────────────────────────
@@ -390,10 +390,10 @@ def fetch_google_play_reviews(app_id, app_name, count=200, max_rating=3):
     try:
         from google_play_scraper import reviews, Sort
     except ImportError:
-        print(f"  ⚠  google-play-scraper not installed. Run: pip install google-play-scraper")
+        print(f"  [WARN] google-play-scraper not installed. Run: pip install google-play-scraper")
         return []
 
-    print(f"  🤖 Fetching Google Play reviews for {app_name} ({app_id})...")
+    print(f"  Fetching Google Play reviews for {app_name} ({app_id})...")
     result = []
 
     try:
@@ -424,7 +424,7 @@ def fetch_google_play_reviews(app_id, app_name, count=200, max_rating=3):
                 "id":          f"gp_{review_id}",
                 "title":       body[:60] + "…" if len(body) > 60 else body,
                 "selftext":    body,
-                "score":       (4 - rating) * 10,   # invert: 1★ = 30pts, 3★ = 10pts
+                "score":       (4 - rating) * 10,   # invert: 1* = 30pts, 3* = 10pts
                 "created_utc": created_utc,
                 "permalink":   f"https://play.google.com/store/apps/details?id={app_id}",
                 "_source":     "googleplay",
@@ -434,10 +434,10 @@ def fetch_google_play_reviews(app_id, app_name, count=200, max_rating=3):
                 "top_comments": [],
             })
 
-        print(f"    ✓ {len(result)} low-rated reviews fetched (from {len(raw)} total)")
+        print(f"    [OK] {len(result)} low-rated reviews fetched (from {len(raw)} total)")
 
     except Exception as e:
-        print(f"    ✗ Google Play fetch failed: {e}")
+        print(f"    [ERR] Google Play fetch failed: {e}")
 
     return result
 
@@ -452,10 +452,10 @@ def fetch_trustpilot_reviews(company_slug, company_name, pages=3, max_rating=3):
     try:
         from bs4 import BeautifulSoup
     except ImportError:
-        print("  ⚠  beautifulsoup4 not installed. Run: pip install beautifulsoup4")
+        print("  [WARN] beautifulsoup4 not installed. Run: pip install beautifulsoup4")
         return []
 
-    print(f"  ⭐ Fetching Trustpilot reviews for {company_name}...")
+    print(f"  Fetching Trustpilot reviews for {company_name}...")
     results = []
     scrape_headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -471,10 +471,10 @@ def fetch_trustpilot_reviews(company_slug, company_name, pages=3, max_rating=3):
             time.sleep(1.5)
             resp = requests.get(url, headers=scrape_headers, timeout=15)
             if resp.status_code == 404:
-                print(f"    ✗ No Trustpilot page found for '{company_slug}'")
+                print(f"    [ERR] No Trustpilot page found for '{company_slug}'")
                 break
             if resp.status_code != 200:
-                print(f"    ✗ HTTP {resp.status_code} on page {page}, stopping")
+                print(f"    [ERR] HTTP {resp.status_code} on page {page}, stopping")
                 break
 
             soup = BeautifulSoup(resp.text, "html.parser")
@@ -484,7 +484,7 @@ def fetch_trustpilot_reviews(company_slug, company_name, pages=3, max_rating=3):
             if next_data_tag:
                 try:
                     page_data = json.loads(next_data_tag.string)
-                    # Path varies by Trustpilot version — try both
+                    # Path varies by Trustpilot version -- try both
                     reviews_raw = (
                         page_data.get("props",{}).get("pageProps",{}).get("reviews", []) or
                         page_data.get("props",{}).get("pageProps",{}).get("initialState",{})
@@ -534,10 +534,10 @@ def fetch_trustpilot_reviews(company_slug, company_name, pages=3, max_rating=3):
                 ))
 
         except Exception as e:
-            print(f"    ✗ Page {page} failed: {e}")
+            print(f"    [ERR] Page {page} failed: {e}")
             break
 
-    print(f"    ✓ {len(results)} Trustpilot reviews fetched")
+    print(f"    [OK] {len(results)} Trustpilot reviews fetched")
     return results
 
 
@@ -549,7 +549,7 @@ def fetch_steam_reviews(app_id, app_name, count=150):
     app_id: Steam numeric app ID (e.g. 1091500 for Cyberpunk 2077)
     Only fetches negative reviews containing intent signals.
     """
-    print(f"  🎮 Fetching Steam reviews for {app_name} (appid={app_id})...")
+    print(f"   Fetching Steam reviews for {app_name} (appid={app_id})...")
     results = []
     cursor  = "*"
     fetched = 0
@@ -601,10 +601,10 @@ def fetch_steam_reviews(app_id, app_name, count=150):
                 break
 
         except Exception as e:
-            print(f"    ✗ Steam fetch error: {e}")
+            print(f"    [ERR] Steam fetch error: {e}")
             break
 
-    print(f"    ✓ {len(results)} Steam reviews with intent signals")
+    print(f"    [OK] {len(results)} Steam reviews with intent signals")
     return results
 
 
@@ -613,7 +613,7 @@ def fetch_steam_reviews(app_id, app_name, count=150):
 def fetch_youtube_comments(search_query, max_results=100, api_key=None):
     """
     Fetch YouTube comments using the free YouTube Data API v3.
-    Free quota: 10,000 units/day — this function uses ~100-300 units per call.
+    Free quota: 10,000 units/day -- this function uses ~100-300 units per call.
 
     Get a free key at console.cloud.google.com:
       1. Create project → Enable "YouTube Data API v3"
@@ -623,7 +623,7 @@ def fetch_youtube_comments(search_query, max_results=100, api_key=None):
     if not api_key:
         return []
 
-    print(f"  📺 Fetching YouTube comments: '{search_query}'...")
+    print(f"   Fetching YouTube comments: '{search_query}'...")
     results = []
 
     try:
@@ -639,7 +639,7 @@ def fetch_youtube_comments(search_query, max_results=100, api_key=None):
         video_ids   = [v["id"]["videoId"] for v in video_items if v.get("id",{}).get("videoId")]
 
         if not video_ids:
-            print("    ✗ No videos found")
+            print("    [ERR] No videos found")
             return []
 
         print(f"    Found {len(video_ids)} videos, scanning comments...")
@@ -686,9 +686,9 @@ def fetch_youtube_comments(search_query, max_results=100, api_key=None):
                 continue
 
     except Exception as e:
-        print(f"    ✗ YouTube fetch failed: {e}")
+        print(f"    [ERR] YouTube fetch failed: {e}")
 
-    print(f"    ✓ {len(results)} YouTube comments with intent signals")
+    print(f"    [OK] {len(results)} YouTube comments with intent signals")
     return results
 
 
@@ -699,7 +699,7 @@ def fetch_bbb_complaints(profile_url, company_name, max_pages=3):
     Fetch complaints from the Better Business Bureau.
     profile_url: full BBB profile URL, e.g.
       "https://www.bbb.org/us/ga/atlanta/profile/airlines/delta-air-lines-0443-3049"
-    No API key needed — parses embedded JSON from server-rendered pages.
+    No API key needed -- parses embedded JSON from server-rendered pages.
     """
     bbb_headers = {
         "User-Agent": (
@@ -718,7 +718,7 @@ def fetch_bbb_complaints(profile_url, company_name, max_pages=3):
             time.sleep(2)
             resp = requests.get(url, headers=bbb_headers, timeout=15)
             if resp.status_code != 200:
-                print(f"    ✗ BBB page {page}: HTTP {resp.status_code}")
+                print(f"    [ERR] BBB page {page}: HTTP {resp.status_code}")
                 break
 
             # Extract __PRELOADED_STATE__ JSON
@@ -728,7 +728,7 @@ def fetch_bbb_complaints(profile_url, company_name, max_pages=3):
                 re.DOTALL,
             )
             if not match:
-                print(f"    ✗ BBB page {page}: no preloaded state found")
+                print(f"    [ERR] BBB page {page}: no preloaded state found")
                 break
 
             data = json.loads(match.group(1))
@@ -781,22 +781,48 @@ def fetch_bbb_complaints(profile_url, company_name, max_pages=3):
                 })
 
         except Exception as e:
-            print(f"    ✗ BBB page {page} error: {e}")
+            print(f"    [ERR] BBB page {page} error: {e}")
             break
 
-    print(f"    ✓ {len(results)} BBB complaints fetched for {company_name}")
+    print(f"    [OK] {len(results)} BBB complaints fetched for {company_name}")
     return results
 
 
 # ── Product Hunt Comments Fetcher ─────────────────────────────────────────────
 
 _PH_API = "https://api.producthunt.com/v2/api/graphql"
+_ph_token_cache = {"token": None, "expires": 0}
+
+def _get_ph_token(api_key=None, api_secret=None, dev_token=None):
+    """Get a Product Hunt API bearer token via client credentials or use a dev token."""
+    if dev_token:
+        return dev_token
+    if _ph_token_cache["token"] and time.time() < _ph_token_cache["expires"] - 60:
+        return _ph_token_cache["token"]
+    if not api_key or not api_secret:
+        return None
+    try:
+        resp = requests.post("https://api.producthunt.com/v2/oauth/token", json={
+            "client_id": api_key,
+            "client_secret": api_secret,
+            "grant_type": "client_credentials",
+        }, timeout=15)
+        if resp.status_code != 200:
+            print(f"    [ERR] Product Hunt OAuth failed: HTTP {resp.status_code}")
+            return None
+        data = resp.json()
+        _ph_token_cache["token"] = data["access_token"]
+        _ph_token_cache["expires"] = time.time() + data.get("expires_in", 7200)
+        return _ph_token_cache["token"]
+    except Exception as e:
+        print(f"    [ERR] Product Hunt OAuth error: {e}")
+        return None
 
 def fetch_producthunt_comments(product_slug, company_name, max_comments=50, api_token=None):
     """
     Fetch comments/reviews from Product Hunt via the free GraphQL API.
     product_slug: the slug from the product URL, e.g. "netflix" for producthunt.com/products/netflix
-    api_token: developer token from producthunt.com API Dashboard (free)
+    api_token: bearer token (from _get_ph_token or dev token)
     """
     if not api_token:
         return []
@@ -837,28 +863,28 @@ def fetch_producthunt_comments(product_slug, company_name, max_comments=50, api_
     try:
         resp = requests.post(_PH_API, headers=headers, json=posts_query, timeout=15)
         if resp.status_code == 401:
-            print(f"    ✗ Product Hunt: auth failed — check PRODUCTHUNT_API_TOKEN")
+            print(f"    [ERR] Product Hunt: auth failed -- check PRODUCTHUNT_API_TOKEN")
             return []
         if resp.status_code != 200:
-            print(f"    ✗ Product Hunt: HTTP {resp.status_code} for {product_slug}")
+            print(f"    [ERR] Product Hunt: HTTP {resp.status_code} for {product_slug}")
             return []
 
         data = resp.json()
         product = (data.get("data") or {}).get("product")
         if not product:
-            print(f"    ✗ Product Hunt: product '{product_slug}' not found")
+            print(f"    [ERR] Product Hunt: product '{product_slug}' not found")
             return []
 
         posts = product.get("posts", {}).get("edges", [])
         if not posts:
-            print(f"    ✗ Product Hunt: no posts for '{product_slug}'")
+            print(f"    [ERR] Product Hunt: no posts for '{product_slug}'")
             return []
 
         product_name = product.get("name", company_name)
         print(f"    Product Hunt: {len(posts)} posts found for {product_name}")
 
     except Exception as e:
-        print(f"    ✗ Product Hunt posts error: {e}")
+        print(f"    [ERR] Product Hunt posts error: {e}")
         return []
 
     # Step 2: Fetch comments from each post
@@ -954,10 +980,10 @@ def fetch_producthunt_comments(product_slug, company_name, max_comments=50, api_
                 after_cursor = page_info.get("endCursor")
 
             except Exception as e:
-                print(f"    ✗ Product Hunt comments error: {e}")
+                print(f"    [ERR] Product Hunt comments error: {e}")
                 break
 
-    print(f"    ✓ {len(results)} Product Hunt comments fetched for {company_name}")
+    print(f"    [OK] {len(results)} Product Hunt comments fetched for {company_name}")
     return results
 
 
@@ -972,11 +998,11 @@ def fetch_google_trends_boost(demands, target_name):
     try:
         from pytrends.request import TrendReq
     except ImportError:
-        print("  ⚠  pytrends not installed — skipping Google Trends boost.")
+        print("  [WARN] pytrends not installed -- skipping Google Trends boost.")
         print("     Run: pip install pytrends")
         return {}
 
-    print(f"\n📈 Checking Google Trends for signal boost...")
+    print(f"\nChecking Google Trends for signal boost...")
     boosts = {}
 
     try:
@@ -1001,11 +1027,11 @@ def fetch_google_trends_boost(demands, target_name):
                     slug = demand.get("slug") or _make_demand_slug(demand.get("subject",""), demand.get("action",""))
                     boosts[slug] = multiplier
                     if avg > 10:
-                        print(f"    📈 {multiplier:.1f}x boost → {demand.get('action','')[:55]}")
+                        print(f"    {multiplier:.1f}x boost → {demand.get('action','')[:55]}")
             except Exception as e:
-                print(f"    ⚠ Trends batch failed: {e}")
+                print(f"    [WARN] Trends batch failed: {e}")
     except Exception as e:
-        print(f"    ⚠ Google Trends unavailable: {e}")
+        print(f"    [WARN] Google Trends unavailable: {e}")
 
     return boosts
 
@@ -1124,7 +1150,7 @@ def _make_demand_slug(subject, action):
 def extract_demands_with_ai(posts):
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        print("\n⚠  No ANTHROPIC_API_KEY found.")
+        print("\n[WARN] No ANTHROPIC_API_KEY found.")
         print("   Local: add it to your .env file")
         print("   GitHub Actions: add it as a repo secret (Settings → Secrets → Actions)\n")
         return []
@@ -1144,7 +1170,7 @@ def extract_demands_with_ai(posts):
         all_demands.extend(batch_demands)
 
     if not all_demands:
-        print("  ⚠ No demands extracted.")
+        print("  [WARN] No demands extracted.")
         return []
 
     # ── Merge duplicates across batches ───────────────────────────────────────
@@ -1183,7 +1209,7 @@ def extract_demands_with_ai(posts):
                     matched = True
                     break
             if not matched:
-                # Reddit post — record its subreddit
+                # Reddit post -- record its subreddit
                 p = post_lookup.get(pid, {})
                 sub = p.get("_subreddit", "")
                 if sub:
@@ -1193,7 +1219,7 @@ def extract_demands_with_ai(posts):
             if len(found_sources) == 1:
                 d["source_subreddit"] = found_sources.pop()
         elif reddit_subs and not found_sources:
-            # Pure Reddit demand — use most common subreddit
+            # Pure Reddit demand -- use most common subreddit
             d["source_subreddit"] = next(iter(reddit_subs))
 
     as_d = [d for d in demands if any(p.startswith("as_") for p in d.get("post_ids", []))]
@@ -1205,7 +1231,7 @@ def extract_demands_with_ai(posts):
     if tp_d: parts.append(f"{len(tp_d)} Trustpilot")
     if st_d: parts.append(f"{len(st_d)} Steam")
     if yt_d: parts.append(f"{len(yt_d)} YouTube")
-    print(f"  ✓ {len(demands)} total requests extracted ({', '.join(parts)})")
+    print(f"  [OK] {len(demands)} total requests extracted ({', '.join(parts)})")
     return demands
 
 
@@ -1232,7 +1258,7 @@ def _extract_batch(client, posts, batch_num, total_batches):
         if src in SOURCE_LABELS:
             label, _ = SOURCE_LABELS[src]
             rating = s.get("star_rating")
-            rating_str = f", {rating}★" if rating else ""
+            rating_str = f", {rating}*" if rating else ""
             id_lines.append(f'  id="{s["id"]}" [{label} review{rating_str}, app={s.get("app","")}]')
         else:
             id_lines.append(f'  id="{s["id"]}" [Reddit post, r/{s.get("_subreddit","?")}]')
@@ -1258,7 +1284,7 @@ NON-REDDIT SOURCES:
 - "review_text" or "comment_text" field contains the actual content (use this, not the title)
 - IDs starting with as_=App Store, gp_=Google Play, tp_=Trustpilot, st_=Steam, yt_=YouTube, bb_=BBB, ph_=Product Hunt
 - Set source_subreddit to the platform name (appstore/googleplay/trustpilot/steam/youtube/bbb/producthunt)
-- All are valid demand signals — extract complaints and requests from them just like Reddit posts
+- All are valid demand signals -- extract complaints and requests from them just like Reddit posts
 """
 
     # Build canonical name list for Claude to use exactly
@@ -1298,7 +1324,7 @@ Return ONLY a JSON array. No markdown, no explanation.
 ]"""
 
     try:
-        print(f"\n🤖 Batch {batch_num}/{total_batches} → Claude ({len(summaries)} items)...")
+        print(f"\nBatch {batch_num}/{total_batches} → Claude ({len(summaries)} items)...")
         message = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=8192,
@@ -1312,20 +1338,20 @@ Return ONLY a JSON array. No markdown, no explanation.
         for d in demands:
             bad = [pid for pid in d.get("post_ids", []) if pid not in valid_ids]
             if bad:
-                print(f"  ⚠ Removing invented IDs: {bad}")
+                print(f"  [WARN] Removing invented IDs: {bad}")
                 d["post_ids"] = [pid for pid in d.get("post_ids", []) if pid in valid_ids]
 
         as_d = sum(1 for d in demands if any(p.startswith("as_") for p in d.get("post_ids",[])))
         gp_d = sum(1 for d in demands if any(p.startswith("gp_") for p in d.get("post_ids",[])))
-        print(f"  ✓ Batch {batch_num}: {len(demands)} requests ({as_d} App Store, {gp_d} Google Play)")
+        print(f"  [OK] Batch {batch_num}: {len(demands)} requests ({as_d} App Store, {gp_d} Google Play)")
         return demands
 
     except Exception as e:
         err = str(e)
         if "credit balance" in err or "too low" in err:
-            print(f"  ✗ Credits not active. Check console.anthropic.com → Plans & Billing.")
+            print(f"  [ERR] Credits not active. Check console.anthropic.com → Plans & Billing.")
         else:
-            print(f"  ✗ Batch {batch_num} failed: {e}")
+            print(f"  [ERR] Batch {batch_num} failed: {e}")
         return []
 
 
@@ -1376,7 +1402,7 @@ def fetch_pending_topics():
         )
         return resp.json() if resp.ok else []
     except Exception as e:
-        print(f"  ⚠ Could not fetch topic queue: {e}")
+        print(f"  [WARN] Could not fetch topic queue: {e}")
         return []
 
 def mark_topics_live(topic_ids):
@@ -1416,7 +1442,7 @@ def discover_app_ids(company_name):
     except Exception:
         pass
 
-    # Google Play — try standard package name patterns
+    # Google Play -- try standard package name patterns
     clean = re.sub(r"[^a-z0-9]", "", company_name.lower())
     candidates = [
         f"com.{clean}.android",
@@ -1466,7 +1492,7 @@ def fetch_reddit_search(query, limit=50):
                 "top_comments": [],
             })
     except Exception as e:
-        print(f"  ⚠ Reddit search failed: {e}")
+        print(f"  [WARN] Reddit search failed: {e}")
     return posts
 
 
@@ -1475,7 +1501,7 @@ def fetch_reddit_search(query, limit=50):
 def run():
     subs_label = " + ".join(f"r/{s}" for s in SUBREDDITS)
     print("=" * 60)
-    print("  REQUESTER v2 — Community Request Intelligence")
+    print("  REQUESTER v2 -- Community Request Intelligence")
     print(f"  Targets: {subs_label}")
     print("=" * 60)
 
@@ -1485,7 +1511,7 @@ def run():
     _pending_topic_ids = []
     pending_topics = fetch_pending_topics()
     if pending_topics:
-        print(f"\n📬 Processing {len(pending_topics)} queued topic request(s)...")
+        print(f"\n Processing {len(pending_topics)} queued topic request(s)...")
         for topic in pending_topics:
             name = topic["company_name"]
             _pending_topic_ids.append(topic["id"])
@@ -1502,10 +1528,10 @@ def run():
 
             if ids["appstore_id"]:
                 APP_STORE_APPS.append({"name": name, "app_id": ids["appstore_id"]})
-                print(f"    ✓ App Store: {ids['appstore_id']}")
+                print(f"    [OK] App Store: {ids['appstore_id']}")
             if ids["googleplay_id"]:
                 GOOGLE_PLAY_APPS.append({"name": name, "app_id": ids["googleplay_id"]})
-                print(f"    ✓ Google Play: {ids['googleplay_id']}")
+                print(f"    [OK] Google Play: {ids['googleplay_id']}")
             # Trustpilot: guess domain
             TRUSTPILOT_COMPANIES.append({"name": name, "slug": f"{clean_name}.com"})
 
@@ -1520,7 +1546,7 @@ def run():
 
     all_raw_posts = []
     for sub in SUBREDDITS:
-        print(f"\n📡 Ingesting posts from r/{sub}...")
+        print(f"\nIngesting posts from r/{sub}...")
         for sort in SORT_MODES:
             posts = fetch_posts(sub, sort, POST_LIMIT)
             # Tag each post with its subreddit
@@ -1538,7 +1564,7 @@ def run():
             unique_posts.append(p)
     print(f"\n  Total unique posts across all sources: {len(unique_posts)}")
 
-    print(f"\n🔍 Filtering for intent signals...")
+    print(f"\nFiltering for intent signals...")
     intent_posts = [
         p for p in unique_posts
         if contains_intent(p.get("title","") + " " + p.get("selftext",""))
@@ -1548,7 +1574,7 @@ def run():
     # Sort by score descending so the highest-upvoted posts are analyzed first
     intent_posts.sort(key=lambda p: p.get("score", 0), reverse=True)
 
-    print(f"\n💬 Fetching comments (takes ~{min(len(intent_posts), MAX_POSTS_FOR_AI)*1.2:.0f}s)...")
+    print(f"\n Fetching comments (takes ~{min(len(intent_posts), MAX_POSTS_FOR_AI)*1.2:.0f}s)...")
     enriched = []
     for i, post in enumerate(intent_posts[:MAX_POSTS_FOR_AI]):
         sub = post.get("_subreddit", SUBREDDITS[0])
@@ -1567,7 +1593,7 @@ def run():
     # ── App Store ingestion ───────────────────────────────────────────────────
     appstore_reviews = []
     if APP_STORE_APPS:
-        print(f"\n📱 Fetching App Store reviews...")
+        print(f"\n Fetching App Store reviews...")
         for app_cfg in APP_STORE_APPS:
             r_list = fetch_appstore_reviews(
                 app_cfg["app_id"], app_cfg["name"],
@@ -1593,7 +1619,7 @@ def run():
     # ── Trustpilot ingestion ──────────────────────────────────────────────────
     trustpilot_reviews = []
     if TRUSTPILOT_COMPANIES:
-        print(f"\n⭐ Fetching Trustpilot reviews...")
+        print(f"\n Fetching Trustpilot reviews...")
         for co in TRUSTPILOT_COMPANIES:
             tp_list = fetch_trustpilot_reviews(
                 co["slug"], co["name"],
@@ -1606,7 +1632,7 @@ def run():
     # ── Steam ingestion ───────────────────────────────────────────────────────
     steam_reviews = []
     if STEAM_APPS:
-        print(f"\n🎮 Fetching Steam reviews...")
+        print(f"\n Fetching Steam reviews...")
         for app_cfg in STEAM_APPS:
             st_list = fetch_steam_reviews(app_cfg["app_id"], app_cfg["name"], count=STEAM_COUNT)
             steam_reviews.extend(st_list)
@@ -1618,9 +1644,9 @@ def run():
     yt_api_key = os.getenv("YOUTUBE_API_KEY")
     if YOUTUBE_SEARCHES:
         if not yt_api_key:
-            print(f"\n📺 YouTube skipped — add YOUTUBE_API_KEY to .env (free at console.cloud.google.com)")
+            print(f"\n YouTube skipped -- add YOUTUBE_API_KEY to .env (free at console.cloud.google.com)")
         else:
-            print(f"\n📺 Fetching YouTube comments...")
+            print(f"\n Fetching YouTube comments...")
             for query in YOUTUBE_SEARCHES:
                 yt_list = fetch_youtube_comments(query, max_results=YOUTUBE_MAX_RESULTS, api_key=yt_api_key)
                 youtube_comments.extend(yt_list)
@@ -1630,7 +1656,7 @@ def run():
     # ── BBB complaints ingestion ─────────────────────────────────────────────
     bbb_complaints = []
     if BBB_COMPANIES:
-        print(f"\n📋 Fetching BBB complaints...")
+        print(f"\nFetching BBB complaints...")
         for company in BBB_COMPANIES:
             name = company.get("name", "")
             url  = company.get("url", "")
@@ -1644,9 +1670,12 @@ def run():
 
     # ── Product Hunt comments ingestion ──────────────────────────────────────
     ph_comments = []
-    ph_token = os.getenv("PRODUCTHUNT_API_TOKEN", "")
+    ph_dev_token = os.getenv("PRODUCTHUNT_API_TOKEN", "")
+    ph_key       = os.getenv("PRODUCTHUNT_API_KEY", "")
+    ph_secret    = os.getenv("PRODUCTHUNT_API_SECRET", "")
+    ph_token     = _get_ph_token(api_key=ph_key, api_secret=ph_secret, dev_token=ph_dev_token)
     if PH_PRODUCTS and ph_token:
-        print(f"\n🏹 Fetching Product Hunt comments...")
+        print(f"\nFetching Product Hunt comments...")
         for prod in PH_PRODUCTS:
             name = prod.get("name", "")
             slug = prod.get("slug", "")
@@ -1660,10 +1689,10 @@ def run():
                 post_lookup[r["id"]] = r
         print(f"  Total Product Hunt comments added: {len(ph_comments)}")
     elif PH_PRODUCTS and not ph_token:
-        print(f"\n🏹 Product Hunt: skipped (no PRODUCTHUNT_API_TOKEN in .env)")
+        print(f"\nProduct Hunt: skipped (no PRODUCTHUNT_API_KEY/SECRET or PRODUCTHUNT_API_TOKEN in .env)")
 
     # ── Merge all non-Reddit sources ────────────────────────────────────────
-    # External reviews are already low-rating (1-3★) complaints — no intent
+    # External reviews are already low-rating (1-3*) complaints -- no intent
     # filter needed. Applying one was dropping valid complaints that didn't
     # happen to contain magic keywords.
     # Cap reviews per source to control Claude API costs.
@@ -1689,10 +1718,10 @@ def run():
     reddit_count = min(len(enriched), MAX_POSTS_FOR_AI)
     print(f"  Sending to Claude: {ext_summary} + {reddit_count} Reddit = {len(combined)} total")
 
-    print(f"\n⚙️  Extracting requests from {len(combined)} sources...")
+    print(f"\nExtracting requests from {len(combined)} sources...")
     demands = extract_demands_with_ai(combined)
 
-    print(f"\n📊 Calculating Gravity Scores...")
+    print(f"\nCalculating Gravity Scores...")
     for d in demands:
         d["gravity_score"] = calculate_gravity(d, post_lookup)
 
@@ -1720,13 +1749,13 @@ def run():
 
     print("\n")
     print("=" * 60)
-    print(f"  🏆 TOP REQUESTS — {all_sources_label}")
+    print(f"   TOP REQUESTS -- {all_sources_label}")
     print(f"  {len(unique_posts)} posts · {len(all_external)} reviews · {len(demands)} requests found")
     print("=" * 60)
 
     for i, d in enumerate(demands[:10], 1):
         threads = len(d.get("post_ids", []))
-        boost   = f" 📈{d['trends_boost']:.1f}x" if d.get("trends_boost") else ""
+        boost   = f" {d['trends_boost']:.1f}x" if d.get("trends_boost") else ""
         print(f"\n  #{i}  {d['subject']}  [{d['category']}]{boost}")
         print(f"  Request : {d['action']}")
         if d.get("summary"):
@@ -1737,7 +1766,7 @@ def run():
                 t = post_lookup[pid].get("title","")[:65]
                 s = post_lookup[pid].get("score", 0)
                 src = post_lookup[pid].get("_source","reddit")
-                src_label = {"appstore":"📱","googleplay":"▶","trustpilot":"⭐","steam":"🎮","youtube":"📺"}.get(src,"📡")
+                src_label = {"appstore":"AS","googleplay":"GP","trustpilot":"TP","steam":"ST","youtube":"YT"}.get(src,"--")
                 print(f"  └ {src_label} [{s:,}] {t}")
 
     # ── Assemble output ───────────────────────────────────────────────────────
@@ -1779,14 +1808,14 @@ def run():
         }
     }
 
-    # Only overwrite results if we actually extracted demands — never blank out
+    # Only overwrite results if we actually extracted demands -- never blank out
     # a previously good run just because Claude API was temporarily unavailable.
     if demands:
         with open("requester_results.json", "w") as f:
             json.dump(output, f, indent=2)
-        print(f"  💾 Wrote {len(demands)} demands to requester_results.json")
+        print(f"  Wrote {len(demands)} demands to requester_results.json")
     else:
-        print(f"  ⚠  0 demands extracted — keeping existing requester_results.json intact")
+        print(f"  [WARN] 0 demands extracted -- keeping existing requester_results.json intact")
 
     # ── Append history snapshot (compact: slug → gravity score) ────────────
     history_file = "requester_history.json"
@@ -1810,19 +1839,19 @@ def run():
     history["snapshots"] = history["snapshots"][-90:]
     with open(history_file, "w") as f:
         json.dump(history, f)
-    print(f"  📊 History: {len(history['snapshots'])} snapshots saved")
+    print(f"  History: {len(history['snapshots'])} snapshots saved")
 
     try:
         run_id = requester_db.save_run(output)
-        print(f"\n\n  ✅ Saved to requester_results.json + requester.db (run #{run_id})")
+        print(f"\n\n  -Saved to requester_results.json + requester.db (run #{run_id})")
     except Exception as e:
-        print(f"\n  ⚠  DB save failed (JSON still saved): {e}")
-        print(f"\n\n  ✅ Saved to requester_results.json ({len(demands)} requests)")
+        print(f"\n  [WARN] DB save failed (JSON still saved): {e}")
+        print(f"\n\n  -Saved to requester_results.json ({len(demands)} requests)")
 
     # Mark queued topics as live now that we've scraped them
     if _pending_topic_ids:
         mark_topics_live(_pending_topic_ids)
-        print(f"  📬 Marked {len(_pending_topic_ids)} topic request(s) as live in Supabase")
+        print(f"  Marked {len(_pending_topic_ids)} topic request(s) as live in Supabase")
 
     print("=" * 60)
 

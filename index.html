@@ -1318,7 +1318,7 @@ body[data-theme="dark"] a.thread-card:hover {
         </div>
       </div>
     </div>
-    <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
+    <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">Dark</button>
     <!-- Auth area -->
     <div class="auth-area" id="auth-area" style="position:relative;">
       <!-- Sign-in nudge (shown when unauthenticated user tries to vote) -->
@@ -1381,7 +1381,7 @@ body[data-theme="dark"] a.thread-card:hover {
   <!-- Toolbar -->
   <div class="toolbar">
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
+      <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input class="search-input" type="text" id="search-input" placeholder="Search requests, companies, topics…">
       <span class="result-count" id="result-count"></span>
     </div>
@@ -1492,7 +1492,7 @@ body[data-theme="dark"] a.thread-card:hover {
   <!-- Save -->
   <div style="display:flex;gap:10px;margin-top:24px;">
     <button onclick="saveSettings()" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
-      💾 Save Config
+       Save Config
     </button>
     <button onclick="closeSettings()" style="background:none;border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:12px 20px;font-size:14px;cursor:pointer;font-family:inherit;">
       Cancel
@@ -2105,7 +2105,7 @@ function toggleDark() {
   const next = isDark ? '' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   document.body.setAttribute('data-theme', next);
-  document.getElementById('dark-toggle').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('dark-toggle').textContent = isDark ? 'Dark' : 'Light';
   localStorage.setItem('requester_theme', isDark ? 'light' : 'dark');
 }
 
@@ -2207,7 +2207,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.setAttribute('data-theme', 'dark');
     document.body.setAttribute('data-theme', 'dark');
     const btn = document.getElementById('dark-toggle');
-    if (btn) btn.textContent = '☀️';
+    if (btn) btn.textContent = 'Light';
   }
   // Follow system changes if user hasn't manually set a preference
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
@@ -2216,7 +2216,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.documentElement.setAttribute('data-theme', v);
       document.body.setAttribute('data-theme', v);
       const btn = document.getElementById('dark-toggle');
-      if (btn) btn.textContent = e.matches ? '☀️' : '🌙';
+      if (btn) btn.textContent = e.matches ? 'Light' : 'Dark';
     }
   });
 
@@ -2658,7 +2658,7 @@ function render() {
           <button class="upvote-btn ${d.user_voted?'voted':''}" onclick="toggleVote('${d.slug||_clientSlug(d.subject,d.action)||''}',event,this)" data-slug="${d.slug||_clientSlug(d.subject,d.action)||''}" title="${d.user_voted?'Remove upvote':'Upvote this request'}">
             ▲${(d.vote_count||0) > 0 ? ` <span class="vote-count">${d.vote_count}</span>` : ''}
           </button>
-          <button class="share-btn" onclick="shareSubject('${(d.slug||_clientSlug(d.subject,d.action)).replace(/'/g,"\\'")}',event)" title="Copy link to this request">🔗</button>
+          <button class="share-btn" onclick="shareSubject('${(d.slug||_clientSlug(d.subject,d.action)).replace(/'/g,"\\'")}',event)" title="Copy link to this request">Link</button>
         </div>
       </div>
     </div>`;
@@ -2805,7 +2805,7 @@ function renderTrendline(slug) {
   const older  = scores.slice(-6, -3);
   const avgRecent = recent.reduce((a,b) => a+b, 0) / (recent.length || 1);
   const avgOlder  = older.length ? older.reduce((a,b) => a+b, 0) / older.length : avgRecent;
-  const dir = avgRecent > avgOlder * 1.1 ? '📈 Trending up' : avgRecent < avgOlder * 0.9 ? '📉 Declining' : '➡️ Stable';
+  const dir = avgRecent > avgOlder * 1.1 ? '^ Trending up' : avgRecent < avgOlder * 0.9 ? 'v Declining' : '-- Stable';
 
   el.innerHTML = `
     <div class="trend-wrap">

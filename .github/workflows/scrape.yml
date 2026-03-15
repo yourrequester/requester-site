@@ -37,7 +37,8 @@ jobs:
           SUPABASE_ANON_KEY:      ${{ secrets.SUPABASE_ANON_KEY }}
           REDDIT_CLIENT_ID:       ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET:   ${{ secrets.REDDIT_CLIENT_SECRET }}
-          PRODUCTHUNT_API_TOKEN:  ${{ secrets.PRODUCTHUNT_API_TOKEN }}
+          PRODUCTHUNT_API_KEY:    ${{ secrets.PRODUCTHUNT_API_KEY }}
+          PRODUCTHUNT_API_SECRET: ${{ secrets.PRODUCTHUNT_API_SECRET }}
         run: python requester_phase1.py
 
       - name: Pull latest before committing
