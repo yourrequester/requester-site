@@ -1545,14 +1545,15 @@ def run():
         all_extra_reddit = []
 
     all_raw_posts = []
-    for sub in SUBREDDITS:
-        print(f"\nIngesting posts from r/{sub}...")
-        for sort in SORT_MODES:
-            posts = fetch_posts(sub, sort, POST_LIMIT)
-            # Tag each post with its subreddit
-            for p in posts:
-                p["_subreddit"] = sub
-            all_raw_posts.extend(posts)
+    # TEMPORARY: Reddit disabled — no OAuth credentials yet, saves time/tokens
+    # for sub in SUBREDDITS:
+    #     print(f"\nIngesting posts from r/{sub}...")
+    #     for sort in SORT_MODES:
+    #         posts = fetch_posts(sub, sort, POST_LIMIT)
+    #         for p in posts:
+    #             p["_subreddit"] = sub
+    #         all_raw_posts.extend(posts)
+    print("\n  [SKIP] Reddit ingestion disabled (no OAuth yet)")
 
     # Merge any extra reddit posts from the topic queue search
     all_raw_posts.extend(all_extra_reddit)
@@ -1574,15 +1575,16 @@ def run():
     # Sort by score descending so the highest-upvoted posts are analyzed first
     intent_posts.sort(key=lambda p: p.get("score", 0), reverse=True)
 
-    print(f"\n Fetching comments (takes ~{min(len(intent_posts), MAX_POSTS_FOR_AI)*1.2:.0f}s)...")
+    # TEMPORARY: Reddit comment enrichment disabled
     enriched = []
-    for i, post in enumerate(intent_posts[:MAX_POSTS_FOR_AI]):
-        sub = post.get("_subreddit", SUBREDDITS[0])
-        print(f"  [{i+1}/{min(len(intent_posts), MAX_POSTS_FOR_AI)}] r/{sub}: {post['title'][:55]}...")
-        full = fetch_post_with_comments(sub, post["id"])
-        if full:
-            full["_subreddit"] = sub
-        enriched.append(full if full else post)
+    # print(f"\n Fetching comments (takes ~{min(len(intent_posts), MAX_POSTS_FOR_AI)*1.2:.0f}s)...")
+    # for i, post in enumerate(intent_posts[:MAX_POSTS_FOR_AI]):
+    #     sub = post.get("_subreddit", SUBREDDITS[0])
+    #     print(f"  [{i+1}/{min(len(intent_posts), MAX_POSTS_FOR_AI)}] r/{sub}: {post['title'][:55]}...")
+    #     full = fetch_post_with_comments(sub, post["id"])
+    #     if full:
+    #         full["_subreddit"] = sub
+    #     enriched.append(full if full else post)
 
     post_lookup = {p["id"]: p for p in unique_posts}
     # Write enriched posts (with comments) back to post_lookup so gravity
