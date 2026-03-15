@@ -43,9 +43,8 @@ jobs:
 
       - name: Pull latest before committing
         run: |
-          git stash --include-untracked
+          git config rebase.autoStash true
           git pull --rebase origin main
-          git stash pop || true
 
       - name: Commit updated results
         uses: stefanzweifel/git-auto-commit-action@v5.0.1
