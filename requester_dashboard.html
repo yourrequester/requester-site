@@ -1269,8 +1269,8 @@ body[data-theme="dark"] a.thread-card:hover {
   bottom: 28px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--ink);
-  color: white;
+  background: #1a1814;
+  color: #ffffff;
   font-size: 13px;
   font-weight: 500;
   padding: 9px 20px;
@@ -1280,6 +1280,7 @@ body[data-theme="dark"] a.thread-card:hover {
   transition: all 0.25s;
   z-index: 9999;
   white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
 }
 #toast.show {
   opacity: 1;
@@ -1748,13 +1749,16 @@ async function _doVote(slug, btnEl) {
   const newVoted = !isVoted;
 
   // Optimistic UI + pop animation
-  allBtns.forEach(b => {
+  // Separate card buttons from detail button to avoid double-updating
+  const detailBtn = document.getElementById('detail-vote-btn');
+  const cardBtns = allBtns.filter(b => b !== detailBtn);
+
+  cardBtns.forEach(b => {
     b.classList.toggle('voted', newVoted);
     b.style.animation = 'none';
     requestAnimationFrame(() => { b.style.animation = 'vote-pop 0.3s ease'; });
     let countEl = b.querySelector('.vote-count');
     if (!countEl && newVoted) {
-      // Create span if it doesn't exist yet (was 0)
       countEl = document.createElement('span');
       countEl.className = 'vote-count';
       b.appendChild(countEl);
@@ -1765,25 +1769,20 @@ async function _doVote(slug, btnEl) {
       if (next === 0) countEl.remove(); else countEl.textContent = next;
     }
   });
-  // Update detail panel count
-  const detailBtn = document.getElementById('detail-vote-btn');
-  const detailCount = document.getElementById('detail-vote-count');
+
+  // Update detail panel separately
   if (detailBtn) {
+    detailBtn.classList.toggle('voted', newVoted);
+    detailBtn.style.animation = 'none';
+    requestAnimationFrame(() => { detailBtn.style.animation = 'vote-pop 0.3s ease'; });
+    const detailCount = document.getElementById('detail-vote-count');
     if (detailCount) {
       const cur = parseInt(detailCount.textContent) || 0;
       const next = newVoted ? cur + 1 : Math.max(0, cur - 1);
-      if (next === 0) {
-        // Remove count span entirely
-        detailCount.remove();
-        // Also strip trailing " vote/votes" text nodes
-        detailBtn.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ''; });
-      } else {
-        detailCount.textContent = next;
-        detailCount.nextSibling && (detailCount.nextSibling.textContent = ` vote${next!==1?'s':''}`);
-      }
+      if (next === 0) { detailBtn.innerHTML = '▲'; }
+      else { detailCount.textContent = next; }
     } else if (newVoted) {
-      // Build count from scratch
-      detailBtn.innerHTML = `▲ <span id="detail-vote-count">1</span>`;
+      detailBtn.innerHTML = '▲ <span id="detail-vote-count">1</span>';
     }
   }
 
@@ -1808,26 +1807,29 @@ async function _doVote(slug, btnEl) {
     const { count } = await _sb.from('votes')
         .select('*', { count: 'exact', head: true }).eq('demand_slug', slug);
     const realCount = count || 0;
-    allBtns.forEach(b => {
-      const ce = b.querySelector('.vote-count');
-      if (ce) ce.textContent = realCount;
+    // Sync card buttons
+    cardBtns.forEach(b => {
+      let ce = b.querySelector('.vote-count');
+      if (realCount > 0) {
+        if (!ce) { ce = document.createElement('span'); ce.className = 'vote-count'; b.appendChild(ce); }
+        ce.textContent = realCount;
+      } else if (ce) { ce.remove(); }
     });
-    // Sync detail panel with real count
-    const dBtn = document.getElementById('detail-vote-btn');
-    if (dBtn) {
+    // Sync detail panel
+    if (detailBtn) {
       if (realCount > 0) {
         const dce = document.getElementById('detail-vote-count');
         if (dce) { dce.textContent = realCount; }
-        else { dBtn.innerHTML = `▲ <span id="detail-vote-count">${realCount}</span>`; }
+        else { detailBtn.innerHTML = `▲ <span id="detail-vote-count">${realCount}</span>`; }
       } else {
-        dBtn.innerHTML = '▲';
+        detailBtn.innerHTML = '▲';
       }
     }
     if (demand) { demand.user_voted = newVoted; demand.vote_count = realCount; }
 
   } catch(e) {
     // Revert optimistic UI
-    allBtns.forEach(b => {
+    cardBtns.forEach(b => {
       b.classList.toggle('voted', isVoted);
       const ce = b.querySelector('.vote-count');
       if (ce) {
@@ -1835,9 +1837,13 @@ async function _doVote(slug, btnEl) {
         ce.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
       }
     });
-    if (detailCount) {
-      const cur = parseInt(detailCount.textContent) || 0;
-      detailCount.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
+    if (detailBtn) {
+      detailBtn.classList.toggle('voted', isVoted);
+      const dce = document.getElementById('detail-vote-count');
+      if (dce) {
+        const cur = parseInt(dce.textContent) || 0;
+        dce.textContent = isVoted ? cur + 1 : Math.max(0, cur - 1);
+      }
     }
     showToast('Vote failed: ' + e.message);
   } finally {
@@ -2560,16 +2566,24 @@ function getFiltered() {
     // Industry filter
     const matchIndustry = !activeIndustry || COMPANY_TO_INDUSTRY[d.subject] === activeIndustry;
 
-    // Platform filter
+    // Platform filter — check both post_id prefixes AND source_subreddit
     let matchPlatform = activePlatforms.size === 0;
     if (!matchPlatform) {
-      const ids = d.post_ids || [];
-      for (const pid of ids) {
-        if (activePlatforms.has('reddit') && !Object.values(_PLATFORM_PREFIX).some(p=>pid.startsWith(p))) { matchPlatform = true; break; }
-        for (const [key, pfx] of Object.entries(_PLATFORM_PREFIX)) {
-          if (activePlatforms.has(key) && pid.startsWith(pfx)) { matchPlatform = true; break; }
+      // Check source_subreddit first (catches merged demands)
+      const ss = d.source_subreddit || '';
+      if (activePlatforms.has(ss)) matchPlatform = true;
+      if (!matchPlatform && activePlatforms.has('reddit') && ss && !['appstore','googleplay','trustpilot','steam','youtube'].includes(ss)) matchPlatform = true;
+
+      // Then check post_id prefixes
+      if (!matchPlatform) {
+        const ids = d.post_ids || [];
+        for (const pid of ids) {
+          if (activePlatforms.has('reddit') && !Object.values(_PLATFORM_PREFIX).some(p=>pid.startsWith(p))) { matchPlatform = true; break; }
+          for (const [key, pfx] of Object.entries(_PLATFORM_PREFIX)) {
+            if (activePlatforms.has(key) && pid.startsWith(pfx)) { matchPlatform = true; break; }
+          }
+          if (matchPlatform) break;
         }
-        if (matchPlatform) break;
       }
     }
 
